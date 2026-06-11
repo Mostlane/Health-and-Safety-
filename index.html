@@ -144,6 +144,19 @@
     text-transform:uppercase;letter-spacing:.04em;font-weight:600;border-color:var(--brand)}
   .doc th{background:var(--brand-light);color:var(--brand-dark);font-weight:600}
   .doc tbody tr:nth-child(even) td{background:#f5f8fb}
+  .doc table.cm td:first-child{width:30%;font-weight:600;color:var(--brand-dark)}
+  .doc table.cm tbody tr:nth-child(even) td{background:#fff}
+  .doc table.rs td{text-align:center}
+  .doc table.rs td.haz{text-align:left;font-weight:600;color:var(--brand-dark)}
+  .doc table.rs td.aff{text-align:left;font-size:9.5px}
+  .doc .rk-h{background:#f5c6c6;font-weight:600}.doc .rk-m{background:#fde9b8;font-weight:600}.doc .rk-l{background:#cdeacd;font-weight:600}
+  .doc .keygrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:10px;margin:4px 0 12px}
+  .doc .keygrid h4{margin:0 0 4px}
+  .doc .keygrid ul{margin:0;padding-left:16px;list-style:none}
+  .doc .ms-yesno{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;margin:8px 0 14px}
+  .doc .ms-yesno div{border:1px solid #c4cedb;border-radius:4px;padding:6px 4px;font-size:10px}
+  .doc .ms-yesno b{display:block;font-family:var(--head);text-transform:uppercase;letter-spacing:.03em;color:var(--brand-dark);font-size:9.5px;margin-bottom:3px}
+  .doc .ms-fill{min-height:34px;border:1px solid #c4cedb;border-radius:4px;padding:8px;white-space:pre-wrap;background:#fafcfe;margin:0 0 12px}
 
   /* ----- cover page ----- */
   .doc .cover{padding:0;overflow:hidden}
@@ -223,7 +236,7 @@
   <!-- ============ FORM PANE ============ -->
   <div class="form-pane">
     <h1 class="app-title">Construction Phase H&amp;S Plan</h1>
-    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11d</span></p>
+    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11e</span></p>
 
     <div class="toolbar">
       <button id="btnPrint">Save / Print PDF</button>
@@ -340,6 +353,38 @@ const GROUPS = [
       help:"Open the planner to find/choose a hospital, see the drive distance & time, frame the map, then Insert the route image into Appendix E." },
     { id:"hospitalName",    label:"Nearest A&E hospital", type:"text", def:"Royal Bournemouth Hospital" },
     { id:"hospitalAddress", label:"Hospital address", type:"textarea", def:"Castle Lane\nBournemouth BH7 7DW" },
+  ]},
+
+  { title:"8. Method statement (Appendix B)", open:false, fields:[
+    { id:"msSummary",   label:"Summary of the project", type:"textarea",
+      def:"Demolition of garage, new extension and internal alterations / refurbishment to the existing building." },
+    { id:"msStartDate", label:"Start date", type:"text", def:"" },
+    { id:"msFinishDate",label:"Finish date", type:"text", def:"" },
+    { id:"msIssueDate", label:"Issue date", type:"text", def:"22/02/2026" },
+    { id:"msDocNumber", label:"Document number", type:"text", def:"MOS0552/00012" },
+    { id:"msFirstAider",label:"On-site first aider", type:"text", def:"Chris Freeman" },
+    { id:"msFirstAidBox",label:"First aid box location", type:"text", def:"Site office / with Mostlane operatives" },
+    { id:"msEvacPoint", label:"Designated evacuation meeting point", type:"text", def:"Site compound (as per existing Fire Safety evacuation plan)" },
+    { id:"msPermit1",   label:"Work permit 1 name", type:"text", def:"Hot Works Permit" },
+    { id:"msPermit1Final", label:"Permit 1 finalised?", type:"select", options:["Yes","No"], def:"No" },
+    { id:"msPermit2",   label:"Work permit 2 name", type:"text", def:"Permit to Work / Isolation Certificate" },
+    { id:"msPermit2Final", label:"Permit 2 finalised?", type:"select", options:["Yes","No"], def:"No" },
+    { id:"msTraining",  label:"Staff training requirements", type:"textarea",
+      def:"CSCS, PASMA (tower scaffold), Asbestos awareness, Abrasive wheels, Manual handling, task-specific toolbox talks." },
+    { id:"msEquipment", label:"Equipment needed", type:"textarea",
+      def:"General building tools, cordless drills, excavators, breakers, general groundworking tools, stairwell tower scaffold." },
+    { id:"msHardHats",  label:"PPE: Hard hats", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msBoots",     label:"PPE: Safety boots", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msHiVis",     label:"PPE: High-visibility jackets", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msGloves",    label:"PPE: Safety gloves", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msEye",       label:"PPE: Eye protection", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msHearing",   label:"PPE: Hearing protection", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msResp",      label:"PPE: Respiratory protection", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"msWaste",     label:"Waste disposal arrangements", type:"textarea",
+      def:"All waste segregated where practicable and removed by a registered/licensed waste carrier; waste transfer/consignment notes retained in the PMS folder." },
+    { id:"msOrderOps",  label:"Order of operations", type:"textarea",
+      def:"1. Site set-up, welfare & compound.\n2. Soft strip / demolition of garage.\n3. Groundworks & foundations to extension.\n4. Structure & weathertight.\n5. Internal alterations & first/second fix.\n6. Finishes, testing & handover." },
+    { id:"msOtherInfo", label:"Other important information", type:"textarea", def:"" },
   ]},
 ];
 
@@ -984,13 +1029,26 @@ function renderDoc(){
   applyBranding();
   buildFoot();
   const root=document.getElementById("docRoot");
+  const cmPer=Math.ceil(RAMS_CONTROLS.length/3);
+  const cmSlices=[RAMS_CONTROLS.slice(0,cmPer),RAMS_CONTROLS.slice(cmPer,cmPer*2),RAMS_CONTROLS.slice(cmPer*2)];
   root.innerHTML = [
     pageCover(),
+    pageIndex(),
     pageDescription(),
-    pageWelfare(),
+    pageManagement(),
+    pageManagement2(),
+    pageManagement3(),
     pageSafetyRisks(),
+    pageHealthAndFile(),
+    pageEnvironment(),
     pageAppendixA(),
-    pageAppendixB(),
+    pageRamsCover(),
+    pageRamsHarms(),
+    pageRamsSummary(),
+    cmSlices.map((s,i)=>pageRamsControls(s,i+1,3)).join(""),
+    pageRamsActions(),
+    pageRamsPPE(),
+    pageMethod(),
     pageAppendixCDE(),
   ].join("");
 }
@@ -1038,60 +1096,276 @@ function pageCover(){
   </div>`;
 }
 
+function pageIndex(){
+  return `<div class="page">
+    ${runHead()}
+    <h2>Construction Phase Health &amp; Safety Plan &mdash; Index</h2>
+    <table>
+      <tr><th style="width:14%">1.0</th><td>Introduction</td></tr>
+      <tr><th>2.0</th><td>Description of the Project &mdash; 2.1 Project Description &amp; Programme Details; 2.2 Project Contacts; 2.3 Existing Information</td></tr>
+      <tr><th>3.0</th><td>Management of the Project &mdash; 3.1 Management Structure &amp; Responsibilities; 3.2 Safety Objectives &amp; Monitoring Procedures; 3.3 Arrangements for Managing the Project (communication, consultation, design information &amp; changes, selection &amp; control of contractors, site security, induction, training, welfare &amp; first aid, accident/incident/near-miss reporting, risk assessments &amp; safe systems of work, site rules, fire &amp; emergency procedures, PPE)</td></tr>
+      <tr><th>4.0</th><td>Arrangements for Controlling Significant Project Risks &mdash; 4.1 Safety Risks (access &amp; egress, live services, stability, fall prevention, lifting, maintenance of plant, traffic routes, storage, protection of the public); 4.2 Health Risks (manual handling, hazardous substances, noise &amp; vibration)</td></tr>
+      <tr><th>5.0</th><td>The Health &amp; Safety File</td></tr>
+      <tr><th>6.0</th><td>Environmental Management Plan</td></tr>
+      <tr><th>A&ndash;F</th><td>Appendices: Project Directory; Risk Assessment &amp; Method Statement; Compound Location &amp; Site Set-up; Contacts &amp; Professional Team; Local Hospital &amp; A&amp;E Department; Mostlane Health &amp; Safety Policy</td></tr>
+    </table>
+    <p><i>The presence of asbestos containing materials is likely given the build date.</i></p>
+    ${FOOT}
+  </div>`;
+}
+
 function pageDescription(){
   return `<div class="page">
     ${runHead()}
     <h2>1.0&nbsp;&nbsp;Introduction</h2>
     <p>This document forms the Health &amp; Safety Plan for the project as required under the Construction
-       (Design &amp; Management) Regulations 2015. It is a live document to be reviewed and amended throughout
-       the life of the project. An initial review is to be undertaken by the Project Manager who will complete
-       those appendices that require to be made site specific.</p>
+       (Design &amp; Management) Regulations 2015. It is a live document to be reviewed and amended throughout the
+       life of the project. An initial review is to be undertaken by the Project Manager who will complete those
+       appendices that require to be made site specific.</p>
     <p>The project will be carried out in accordance with the Construction (Design &amp; Management) Regulations
        2015, Approved Codes of Practice, Guidance Notes and all other relevant Regulations under the Health &amp;
        Safety at Work Act 1974.</p>
+    <p>Our Company Health &amp; Safety Policy and Safety Management System forms part of the Construction Phase
+       Health &amp; Safety Plan and all construction work will be carried out in accordance with these requirements.
+       This plan is to be used in conjunction with the PMS Folder.</p>
 
     <h2>2.0&nbsp;&nbsp;Description of the Project</h2>
     <h3>2.1&nbsp;&nbsp;Project Description &amp; Programme Details</h3>
     <table>
-      <tr><th style="width:38%">Description of the project</th><td>${esc(v("scheme"))}</td></tr>
+      <tr><th style="width:34%">Description of the project</th><td>${esc(v("scheme"))}</td></tr>
       <tr><th>Location</th><td>${nl(v("siteAddress"))}</td></tr>
       <tr><th>Project duration</th><td>${esc(v("duration"))}</td></tr>
-      <tr><th>Working hours</th><td>${esc(v("workingHours"))}</td></tr>
+      <tr><th>Working hours are expected to be</th><td>${esc(v("workingHours"))}</td></tr>
     </table>
 
     <h3>2.2&nbsp;&nbsp;Project Contacts</h3>
+    <p>A project directory with all team members is appended to this Construction Phase Health &amp; Safety Plan
+       (Appendix A).</p>
     <table>
-      <tr><th>Project Director</th><td>${esc(v("projectDirector"))} &mdash; Office ${esc(v("officeTel"))}, Mob ${esc(v("projectDirectorMob"))}</td></tr>
+      <tr><th colspan="2">Mostlane Construction project management and HSE department contact details</th></tr>
+      <tr><th style="width:34%">Project Director</th><td>${esc(v("projectDirector"))} &mdash; Office ${esc(v("officeTel"))}, Mobile ${esc(v("projectDirectorMob"))}</td></tr>
       <tr><th>Contracts Manager(s)</th><td>${esc(v("contractsManager"))} &mdash; ${esc(v("contractsManagerTel"))}</td></tr>
       <tr><th>Site Manager</th><td>${esc(v("siteManager"))} &mdash; ${esc(v("siteManagerTel"))}</td></tr>
     </table>
-    <p>A full project directory with all team members is appended at Appendix A.</p>
+
+    <h3>2.3&nbsp;&nbsp;Existing Information</h3>
+    <p>Existing information relevant to the health and safety of the project (including any asbestos register /
+       survey, existing services information and the pre-construction information) is held with the project
+       management team and reviewed before works commence.</p>
     ${FOOT}
   </div>`;
 }
 
-function pageWelfare(){
+function pageManagement(){
   return `<div class="page">
     ${runHead()}
     <h2>3.0&nbsp;&nbsp;Management of the Project</h2>
-    <h3>Welfare Facilities &amp; First Aid</h3>
+    <h3>3.1&nbsp;&nbsp;Management Structure &amp; Responsibilities</h3>
+    <p>Management structure for health and safety:</p>
+    <ul>
+      <li>Joe Line &mdash; Managing Director</li>
+      <li>THSP (external safety advisers)</li>
+      <li>Directors / Contracts Manager &mdash; with Personal Assistants and Administration Staff</li>
+      <li>Site Managers</li>
+      <li>Operatives / Labour-Only Sub-Contractors</li>
+      <li>Trade Contractors</li>
+    </ul>
+
+    <h3>3.2&nbsp;&nbsp;Safety Objectives &amp; Monitoring Procedures</h3>
+    <h4>3.2.1&nbsp;&nbsp;Objectives</h4>
+    <p>It is our aim that the project should be carried out to, wherever possible, eliminate, reduce and control
+       all foreseeable risks to the health &amp; safety of:</p>
+    <ul>
+      <li>Those involved in the construction work;</li>
+      <li>Third parties who may be affected (including members of the public) by such work;</li>
+      <li>Those who may carry out maintenance, cleaning or future construction work or demolition on the finished
+          building or infrastructure.</li>
+    </ul>
+    <p>Mostlane Construction Ltd Construction Phase Health &amp; Safety Plan will provide information and
+       instruction to all persons engaged on the project so as to enable them to comply with the principal
+       objective, i.e. to reduce serious and minor accidents on site.</p>
+    <h4>3.2.2&nbsp;&nbsp;Monitoring Procedures</h4>
+    <p>The Construction Phase Health and Safety Plan developed for each project identifies significant hazards and
+       what control measures will be implemented. Site specific and generic procedures are contained within each
+       plan identifying hazardous tasks, permit to work requirements, hazardous material controls etc.</p>
+    <p>Mostlane Construction Ltd Projects Director will not allow any works to commence on site unless site
+       specific risk assessments and method statements are produced by the relevant sub-contractors. The Project
+       Manager must fully review the site specific documentation prior to allowing any works to start.</p>
+    <p>The Mostlane Construction Ltd Site Manager controls and monitors the standard of Health &amp; Safety on site
+       through effective supervision and the implementation of Mostlane Construction Limited management systems.</p>
+    <p>Monitoring procedures include a weekly management workplace inspection and regular (Mostlane Construction
+       Ltd) workplace inspections using form EHS-INS-01, regular health &amp; safety meetings and subcontractor
+       co-ordination meetings.</p>
+    <p>Statutory inspections of tower scaffolds, MEWPs and scaffolds that are directly controlled by Mostlane
+       Construction Ltd will be carried out by competent, trained persons and the results recorded. Sub-contractors
+       will maintain records of workplace inspections for scaffolds and excavations which they control and make
+       those records available for inspection when requested.</p>
+    <p>Mostlane Construction Ltd will utilise internal safety consultants throughout the duration of the project to
+       carry out audits on either a weekly or fortnightly basis to ensure safety management systems are
+       implemented. A summary of the corrective actions required will be left on the project for action by the site
+       team and copied to the client. It is the responsibility of the Mostlane Construction Limited project
+       management team to ensure the required actions are completed within the time scales stated. The audit report
+       will be emailed to the relevant project management team member.</p>
+    <h4>3.2.3&nbsp;&nbsp;Site Disciplinary Procedure</h4>
+    <p>The Mostlane Construction Ltd Site Disciplinary Procedure will be implemented in cases of minor and serious
+       breaches of site rules. In cases of minor breaches of site rules, initially a verbal warning may be issued.
+       Further breaches could lead to the issuing of either a Yellow or Red Card. Refer to EHD-DIS-01 within the
+       PMS Folder.</p>
+    <p>Yellow cards shall be issued to any operative in minor breach of the site rules, including for example,
+       actions in breach of permit conditions (carrying out hot works without a fire extinguisher). The Yellow Card
+       lasts for twelve months or the duration of the contract (whichever is shorter). Further breaches of a similar
+       nature could lead to a Red Card.</p>
+    <p>Red Cards shall be issued to operatives found in serious breach of site rules, including for example, smoking
+       on site, working dangerously, putting someone else&rsquo;s health &amp; safety at risk or by gaining two
+       yellow cards. The issue of a Red Card results in the offender&rsquo;s instant dismissal from site and lasts
+       for the duration of the contract.</p>
+    <p>Consequences of non-conformance could result in: (1) persons re-sitting the induction; (2) persons being
+       removed from the project.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageManagement2(){
+  return `<div class="page">
+    ${runHead()}
+    <h3>3.3&nbsp;&nbsp;Arrangements for Managing the Project</h3>
+    <h4>Communication on Site</h4>
+    <p>The Client or Principal Contractor will instigate weekly Project meetings throughout the course of the
+       project with health, safety and welfare a fixed item on the agenda. Health, Safety and Welfare issues are to
+       be contained in the minutes of the meetings.</p>
+    <p>It is the responsibility of the employer, be it Mostlane Construction Ltd or a sub-contractor, to ensure that
+       individuals who do not have English as their first language are treated as a special group, and a risk
+       assessment is completed identifying that they are particularly at risk and the control measures that will be
+       introduced to reduce this risk to an acceptable level. Sub-contractors must ensure they communicate the
+       information contained within the method statement and risk assessment to all their employees on site.</p>
+    <p>Required statutory signage will be displayed at the site entrance and/or within the designated site set-up
+       within the site compound. General site signage will be displayed at all access points to site and in areas
+       where public / client&rsquo;s employees are in close proximity to site personnel. All signage will be
+       displayed in such a way that it is visible by all required persons.</p>
+    <h4>Consultation with the Workforce</h4>
+    <p>Consultation with the workforce will be ongoing throughout the time scale of the project, with regular
+       daily / each shift handover sessions (informal) being completed by the Mostlane Construction Limited site
+       team; project meetings (formal) will be held and H&amp;S will be a regular agenda item within these meetings.
+       Toolbox talks will be undertaken on a regular basis.</p>
+    <h4>Communication Regarding Design Information</h4>
+    <p>All designers and design consultants will liaise with the Principal Designer for design assurity and to
+       ensure Health and Safety within the construction phase is not compromised.</p>
+    <h4>Handling Design Changes</h4>
+    <p>Mostlane Construction Ltd, and where applicable any sub-contractor, shall re-examine the health and safety
+       implications of any substantial design changes and implement all necessary measures to deal with those
+       changes. Information such as revised design risk drawing / review and risk assessments will be required from
+       any subcontractors that will have design input. Risk control measures to be implemented are to be recorded as
+       well as all information relayed via Health, Safety and Welfare meetings.</p>
+    <h4>Selection &amp; Control of Contractors</h4>
+    <p>Contractors are assessed against established criteria, which includes their health and safety performance,
+       competence and resource to provide the service as required prior to their selection. In addition, all
+       contractors will provide appropriate method statements and risk assessments prior to their commencing works
+       on site which will be reviewed by the project management team. Continual monitoring through the site
+       inspection and auditing regimes will ensure appropriate control and supervision of delivery.</p>
+    <h4>Communication Between Contractors</h4>
+    <p>Informal daily on-site meetings with sub-contractors will be held to identify any health and safety issues
+       arising from ongoing operations. Daily and weekly meetings will also be held with the Client&rsquo;s Site
+       Representative, when relevant, to agree interface issues.</p>
+    <h4>Site Security</h4>
+    <p>All Mostlane employees will sign in and out on site. When there are no persons working on the site the site
+       will be secured to prevent any unauthorised access. Only persons working on the site who have been inducted
+       will be permitted on site and the site will be secured to prevent public access.</p>
+    <h4>Site Induction</h4>
+    <p>All personnel wishing to visit site will be required in the first instance to report to the site office where
+       they will undergo a site-specific induction carried out by Mostlane Construction Ltd. Note: Visitors must be
+       accompanied by a Mostlane representative at all times unless they have completed the site induction.</p>
+    <h4>Site Training</h4>
+    <p>The Mostlane Construction Ltd Site Manager will ensure relevant toolbox talks are undertaken on site at
+       regular intervals or as required. These are to be delivered by the Site Manager or the Mostlane Construction
+       Ltd appointed adviser, on a health, safety or environmental topic which is relevant to the works being
+       undertaken, and will have a duration of no less than 10 minutes. Any toolbox talk carried out by contractors
+       will be recorded and a copy of the attendance register kept in the PMS folder to demonstrate continuous
+       passage of information on site.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageManagement3(){
+  return `<div class="page">
+    ${runHead()}
+    <h4>Welfare Facilities &amp; First Aid</h4>
     <p>${nl(v("welfare"))}</p>
     <p>The site supervisor is first aid trained and will be on site at all times when any person is working on the
        premises. The first aid kit will be located within the site facilities or with the Mostlane operatives and
-       will be a fully stocked first aid kit suitable for the number of persons working on site.</p>
-    <h3>Site Induction, Training &amp; Security</h3>
-    <p>All personnel wishing to visit site will report to the site office where they will undergo a site-specific
-       induction carried out by Mostlane Construction Ltd. When there are no persons working on the site the site
-       will be secured to prevent any unauthorised access. Toolbox talks will be undertaken on a regular basis.</p>
-    <h3>Accident / Incident / Near Miss</h3>
+       will be on site at all times when operatives are working on site. The first aid kit will be a fully stocked
+       first aid kit suitable for the number of persons working on site. This will be maintained by the site
+       supervisor to ensure it is fully stocked at all times.</p>
+    <h4>Accident / Incident / Near Miss Reporting &amp; Investigation</h4>
     <p>Accidents and incidents requiring notification to the Health &amp; Safety Executive will be reported as
        required under the RIDDOR Regulations 2013 within the allocated time constraints and on the relevant
-       documentation contained within the PMS Folder.</p>
-    <h3>Fire &amp; Emergency Procedures</h3>
-    <p>The fire assembly point will be pointed out as per the existing Fire Safety evacuation plan. An emergency
-       contact list for relevant local services will be compiled and displayed in the site office together with a
-       map showing the route from site to the nearest accident and emergency department
-       (see Appendix E &mdash; ${esc(v("hospitalName"))}).</p>
+       documentation contained within the Mostlane Construction Ltd Project Management Systems Records Folder (PMS).
+       Mostlane Construction Ltd will ensure that all employees and contractors (including maintenance or IT) report
+       all accidents, incidents of ill health, dangerous occurrences, incidents, near misses and any environmental
+       complaints to the project manager without delay (contact details in the project directory).</p>
+    <p>All the above circumstances are to be entered in the Accident/Incident/Near Miss Register (EHS/ACC-01) and
+       investigated at site level using an Accident/Incident/Near Miss Report (EHS/ACC-02). This form should be
+       submitted to Mostlane Construction Limited within 24 hours and a copy kept on site in a secure location (e.g.
+       locked drawer). If required, Mostlane Construction Limited will carry out a further investigation using
+       Accident/Incident/Near Miss Investigation Report (ML/ACC-03). All RIDDOR reportable accident/incidents
+       (including those involving Client staff and members of the public) will be reported to the Project Manager,
+       Project Director, Managing Director and Mostlane Construction Limited nominated persons. Fatalities and major
+       incidents will be reported directly to the Health and Safety Executive Incident Control Centre.</p>
+    <h4>Risk Assessments &amp; Safe Systems of Work</h4>
+    <p>Mostlane Construction will maintain the site Construction Phase Health &amp; Safety Plan on site which will be
+       updated throughout the project. The Project Manager will manage the updating of this file and the information
+       collated throughout the works. All high-risk operations will require the provision of documented risk
+       assessments and method statements prior to works commencing on site. This is to be provided to the Project
+       Manager in reasonable time to allow a detailed review of the documentation. If the Project Manager feels that
+       the proposed method of works is suitable, the information will be retained and integrated into the
+       Construction Phase Health &amp; Safety Plan. All personnel involved in the task must be familiar with the
+       method statements along with the elements of risk involved and the associated control measures.</p>
+    <p>Any operation to be carried out on site and deemed by the design team or others as a hazardous activity will
+       require a risk analysis to be carried out to ascertain the levels of risk involved. Measures to minimise,
+       eliminate or control the elements of risk identified must be established. Where a Client&rsquo;s permit is not
+       available Mostlane Construction Ltd will provide a Permit to Work system, where appropriate, which is also to
+       be adopted for the installation and commissioning of new electrical services, hot works, use of
+       ladders/stepladders and any other high-risk activities. Before issuing a permit, the appointed issuer will
+       check the requesting contractor&rsquo;s risk assessments and method statement against the works to be carried
+       out under the permit. On completion of works under the permit, an inspection of the permit area / activity
+       will be conducted by a &lsquo;competent&rsquo; person and declared safe.</p>
+    <h4>Site Rules</h4>
+    <p>Mandatory site rules that apply to all of Mostlane Construction Limited projects will be displayed on site.
+       In addition, site specific site rules will also be displayed and will include the following:</p>
+    <ul>
+      <li>Unauthorised access points;</li>
+      <li>Permit to Work systems in place;</li>
+      <li>Emergency plans and arrangements.</li>
+    </ul>
+    <p>The site rules will also be included during the induction to ensure effective communication of them.</p>
+    <h4>Fire &amp; Emergency Procedures</h4>
+    <p>Mostlane Construction Ltd Project Fire Risk Assessment is completed in conjunction with the Pre-Start
+       Checklist and is the catalyst for the development of the site emergency plan. The plan must be displayed on
+       site, conveyed to all site personnel and updated as the project works develop. A copy of the assessment and
+       the plan must be given to the Client upon development and at each review when changes occur. The plan will be
+       displayed on site at designated fire points at all times and will identify emergency egress routes and fire
+       points on site. The fire assembly point will be pointed out as per the existing Fire Safety evacuation plan.</p>
+    <p>Where any fire alarm systems, smoke/fire detection systems or fire fighting systems are disconnected in order
+       to carry out extensions, modifications or repairs, temporary systems will be installed and, if possible, be
+       in operation prior to work commencing on the permanent system. An emergency contact list for relevant local
+       services will be compiled and displayed in the site office together with a map showing the route from site to
+       the nearest accident and emergency department (see Appendix E &mdash; ${esc(v("hospitalName"))}).</p>
+    <p>The duties of appointed Fire Warden(s) include assisting project management with development of the fire risk
+       assessment and fire plan; and monitoring that fire escape routes and exits are clear, fire detection
+       equipment is in good working order, fire signage is suitable and sufficient, fire alarms are in good working
+       order, and fire fighting equipment is suitable, sufficient and regularly inspected/maintained. In the event
+       of an evacuation they ensure the premises are clear of Mostlane Construction Ltd personnel, contractors and
+       visitors, ensure the fire brigade have been informed, and allow entry into the building only after
+       confirmation from the fire brigade.</p>
+    <h4>Personal Protective Equipment</h4>
+    <p>All personnel attending site, whether working on site or as a visitor, will be required to conform to the
+       Mostlane Construction Limited requirements for the wearing of mandatory Personal Protective Equipment in the
+       form of safety footwear &amp; high visibility vests, as a minimum. <b>Personnel arriving at site without the
+       required mandatory PPE will not be granted access to the site.</b> All contractors will provide method
+       statements and risk assessments for the works they are carrying out prior to operations commencing. These
+       operations may require additional PPE, such as ear protection, which must be worn. Any relaxation of the
+       personal protective equipment requirements on site must be accompanied by a suitable and sufficient risk
+       assessment, and notices to this effect should be posted on site at the relevant location and on site notice
+       boards.</p>
     ${FOOT}
   </div>`;
 }
@@ -1104,25 +1378,156 @@ function pageSafetyRisks(){
     <h4>Access &amp; Egress (including deliveries)</h4>
     <p>${nl(v("accessEgress"))}</p>
     <h4>Working On or Near Live Services</h4>
-    <p>Electrical work will only be done by a competent person. Isolation points of all live services within the
-       building will be identified prior to works commencing. All necessary services that will be worked on will
-       be isolated and tagged before the commencement of works.</p>
+    <p>Electrical work will only be done by a competent person who has the appropriate certification to demonstrate
+       their ability to work to the standards prescribed by BS 7671 &lsquo;Requirements for Electrical Installations,
+       IET Wiring Regulations&rsquo; in respect of any testing or inspection. Isolation points of all live services
+       within the building will be identified prior to works commencing. All necessary services that will be worked
+       on will be required to be isolated and tagged before the commencement of works. All temporary electrical
+       installations will be undertaken by competent persons; after installations are completed and tested, a copy
+       of the test certificate will be retained within the Folder.</p>
     <h4>Stability of Existing Structure</h4>
     <p>${nl(v("stability"))}</p>
     <h4>Fall Prevention</h4>
+    <p>Stepladders and ladders will not be used on this project unless there is a suitable and sufficient quantified
+       risk assessment developed by Mostlane Construction Limited demonstrating why stepladders or ladders are
+       considered more suitable than other means of working at height, e.g. scaffold systems or mobile elevated
+       working platforms, in accordance with the Working at Height Regulations 2005. The assessment should
+       demonstrate that the use of more suitable work equipment is not justified because of a low risk and: (a) the
+       short duration of time; or (b) existing features on site which cannot be altered. If stepladders or ladders
+       are to be employed, they will only be used for works of short duration, e.g. 5 to 10 minutes&rsquo; maximum,
+       and then only if a three-point physical contact is maintained at all times and a permit has been issued. Rung
+       ladders, if used, are to be secured to a structure or firmly supported, i.e. &lsquo;footed&rsquo; by a
+       mechanical stop or second person at all times. All operatives erecting, dismantling and moving mobile
+       aluminium towers will be trained by a competent training provider; evidence of such training will be provided
+       before personnel are permitted to undertake such operations.</p>
     <p>${nl(v("fallPrevention"))}</p>
     <p>A Scafftag&copy; system must be implemented and prominently displayed at the access to all mobile
-       towers / scaffolds. &lsquo;Hop Ups&rsquo; are not permitted on Mostlane Construction Ltd sites.</p>
+       towers/scaffolds. &lsquo;Hop Ups&rsquo; or similar forms of equipment are not permitted on Mostlane
+       Construction Ltd projects/sites.</p>
     <h4>Control of Lifting Operations</h4>
-    <p>${nl(v("lifting"))}</p>
+    <p>Any lifting of equipment will be subject to a full review and approval of the detailed lifting plan and site
+       specific method of work from the appointed contractor. ${esc(v("lifting"))}</p>
+    <h4>Maintenance of Plant &amp; Equipment</h4>
+    <p>All non hand-held plant or equipment, i.e. MEWPs and hoists, will carry a current test certificate and copies
+       made available. Operators are required to produce training certification / confirmation of competence for all
+       non hand-held plant and equipment and the erection of mobile towers, which should be shown to the Mostlane
+       Construction Ltd Project Manager and the details recorded. Operators using abrasive wheels are also required
+       to produce training certificates. Details of equipment directly responsible to Mostlane Construction Ltd must
+       be entered onto the Plant and Equipment Register within the PMS Folder. Mostlane Construction Ltd do not
+       provide plant or equipment for any sub-contractors. Personnel with no certificated record of training will not
+       be permitted to use any items of plant and equipment on site.</p>
     <h4>Traffic Routes &amp; Segregation</h4>
     <p>${nl(v("traffic"))}</p>
     <h4>Storage of Materials &amp; Equipment</h4>
     <p>${nl(v("storage"))}</p>
+    <h4>Protection of the General Public / Client Staff</h4>
+    <p>Mostlane Construction Ltd will implement suitable and sufficient measures to ensure a safe environment for all
+       site personnel, client staff and members of the public whilst in possession of the site. Mostlane
+       Construction Ltd will ensure that Clients&rsquo; employees are not subject to any additional hazards whilst
+       project works are undertaken. Where required, suitable and sufficient barriers will be formed to protect
+       non-contract personnel, with adequate signage posted warning of the potential hazards.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageHealthAndFile(){
+  return `<div class="page">
+    ${runHead()}
     <h3>4.2&nbsp;&nbsp;Health Risks</h3>
-    <p><b>Manual Handling, Hazardous Substances (COSHH) &amp; Noise/Vibration</b> are managed by assessment and
-       control measures recorded in the PMS Folder, with hazardous substance data sheets and COSHH assessments
-       submitted before use.</p>
+    <h4>Manual Handling</h4>
+    <p>Where possible manual handling will be eliminated by mechanical means. Where this is not reasonably
+       practicable the Project Manager will ensure an assessment is completed and all relevant persons are aware of
+       the control measures required to carry out the task safely. The Project Manager will also ensure access routes
+       where manual handling is likely to take place are maintained clear from all trip hazards and lighting is of a
+       sufficient level.</p>
+    <h4>Use of Hazardous Substances</h4>
+    <p>Mostlane Construction Ltd and sub-contractors who intend to use potentially hazardous substances or materials
+       on site will submit Hazard Safety Data sheets and COSHH assessments.</p>
+    <h4>Reducing Noise &amp; Vibration</h4>
+    <p>Any works that may cause excess noise will be brought to the attention of the project manager so that
+       alternative means can be sought, or the particular works can be scheduled so as to provide minimum risks of
+       exposure to other operatives, client staff and members of the public. All tasks that include the use of power
+       tools that could cause White Finger will be under a hand-arm vibration assessment, submitted to the project
+       manager prior to tasks being carried out. Continual noise monitoring will be carried out by the project
+       manager and noisy works, or works that could affect third parties or neighbours, will be kept to a minimum;
+       these works, if necessary, will be co-ordinated and communicated to neighbouring parties.</p>
+
+    <h2>5.0&nbsp;&nbsp;The Health &amp; Safety File</h2>
+    <h3>5.1&nbsp;&nbsp;Layout &amp; Format (example)</h3>
+    <table>
+      <tr><th>Item required</th><th>No. of copies</th><th>Supplied by</th><th>Required</th></tr>
+      <tr><td>Contract details (commencement, practical completion, defects liability period)</td><td>1 electronic, 1 hard copy</td><td>Contract Administrator</td><td>Yes</td></tr>
+      <tr><td>Design information (specification details, as-built drawings, design criteria)</td><td>1 electronic, 1 hard copy</td><td>Designers</td><td>Yes</td></tr>
+      <tr><td>Project participants (all domestic, named and direct sub-contractors)</td><td>1 electronic, 1 hard copy</td><td>Client / Principal Contractor</td><td>Yes</td></tr>
+      <tr><td>Product information (data sheets for materials requiring a COSHH assessment)</td><td>1 electronic, 1 hard copy</td><td>Principal Contractor</td><td>Yes</td></tr>
+      <tr><td>Residual hazards in relation to future works, and demolition hazards left on completion</td><td>1 electronic, 1 hard copy</td><td>Designers / Principal Contractor</td><td>Yes</td></tr>
+    </table>
+    <h3>5.2&nbsp;&nbsp;Arrangement for Collation of Information</h3>
+    <p>All the above information is to be provided to the client, with one hard copy if required.</p>
+    <h3>5.3&nbsp;&nbsp;Storage of Information</h3>
+    <p>Information is stored and issued in accordance with the client&rsquo;s specification and the Mostlane
+       Construction Ltd management system.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageEnvironment(){
+  return `<div class="page">
+    ${runHead()}
+    <h2>6.0&nbsp;&nbsp;Environmental Management Plan</h2>
+    <h3>6.1&nbsp;&nbsp;Environmental Policy</h3>
+    <p>Mostlane Construction Ltd&rsquo;s commercial objectives are to provide professional, customer-focused
+       contracting services at optimum cost with a commitment to complying with all environmental legislation
+       applicable to our aspects and any other requirements that may be imposed upon us. We strive to improve the
+       positive impacts of our operations upon the environment and work towards the reduction and elimination of the
+       negative aspects wherever possible. These aspects include waste management, supplier and contractor
+       management (waste), use of raw materials / product sourcing, electricity consumption and noise management.</p>
+    <p>We are committed to the prevention of pollution and will assess all new proposed processes to identify
+       potential impacts upon the environment prior to implementation. We are committed to the continuous
+       improvement of our Environmental Management System, which is fully documented and provides the framework for
+       setting and reviewing environmental objectives and targets. The policy of Mostlane Construction Ltd is that
+       our Environmental Management System should comply with BS EN ISO 14001. We commit to implement, maintain and
+       communicate this policy to suppliers, customers and any other interested party.</p>
+    <h3>6.2&nbsp;&nbsp;Legal &amp; Other Requirements</h3>
+    <p>All requirements imposed upon Mostlane Construction Ltd are detailed on the Register of Legal and Other
+       Requirements available on the company Safety Databank. Environmental restrictions imposed on us for this
+       project by the client, local authority or any other interested parties are detailed within the Environmental
+       Plan.</p>
+    <h3>6.4&nbsp;&nbsp;Arrangements for Environmental Management of Significant Impacts</h3>
+    <p><b>Waste Management.</b> In accordance with our Environmental Policy all waste generated from our works will
+       be, where practicable, segregated and disposed of to a licensed tipping facility utilising registered and
+       licensed waste disposal contractors. Transfer notes will be retained by the Project Team within the PMS
+       Folder for all waste removed from site. All waste carriers will have the appropriate licence; all Waste
+       Consignment Notes will be stored on site within the PMS Record folder, recording the category of waste removed
+       and the destination of the waste.</p>
+    <p><b>Supplier &amp; Contractor Management (Waste).</b> All sub-contractors, at placement of order, have been
+       issued with the environmental aspects and associated targets of Mostlane Construction Ltd. Upon attendance to
+       site all sub-contractors will be inducted on the waste management procedures, and instructions for any
+       segregation will be given. Clear signage will identify the locations of segregated waste.</p>
+    <p><b>Noise.</b> Where practicable, Mostlane Construction Ltd will ensure noise generation is reduced to an
+       acceptable level for contractors on site and the general public in the local vicinity. All contractors will be
+       reviewed to ensure they use plant &amp; equipment with efficient noise suppression or controls fitted. All
+       complaints concerning noise emissions from our sites are to be reported as stipulated within our Environmental
+       Management System and investigated, with appropriate corrective and preventive measures taken to prevent
+       reoccurrence.</p>
+    <h4>Emissions into the Atmosphere and Water Courses</h4>
+    <table>
+      <tr><th style="width:34%">Product</th><th>Control technique</th></tr>
+      <tr><td>Diesel &amp; petrol; accidental spillage</td><td>Where possible, generators and fuel-powered machinery should be positioned in a bunded area to contain spillage. Ensure the bund has the capacity to contain the maximum amount of fuel stored in the machinery plus 10%.</td></tr>
+      <tr><td>Paints; thinners; cleaning fluids</td><td>Suggest utilising water-based products, negating the need for spirit-based products. Prevent products from entering the drainage systems.</td></tr>
+      <tr><td>Hazardous dusts (MDF dust &amp; formaldehyde, gypsum, cement-based products)</td><td>Suggest safer alternatives (ply, blockboard, natural timber products etc.). Prepare materials off site to minimise cutting and dust generation. Utilise dust extraction equipment and provide screening to contain dusty atmospheres. Damp down working areas.</td></tr>
+      <tr><td>Smoke</td><td>Company policy prohibits the lighting of fires on site. Extinguish accidental fires immediately. Maintain areas clear of combustible materials.</td></tr>
+    </table>
+    <h4>Emergency Procedures</h4>
+    <p><b>Spillages.</b> Any spillages that occur on site must be contained and prevented from entering any
+       watercourse and harming the local environment. Mostlane Construction Ltd will have COSHH information for all
+       substances being stored and used on site and will review the constraints of the substance/material prior to
+       any person handling or coming into physical contact with it.</p>
+    <p><b>Waste Contamination.</b> Where specific segregated waste storage facilities are cross-contaminated, the
+       worst-case scenario will be assumed and the waste will be removed as per the most hazardous waste contained
+       within. The requirement for waste segregation, where possible, will be fully explained during the induction
+       process onto site. The site team will ensure information is communicated to relevant site operatives and clear
+       signage is displayed at each waste storage facility.</p>
     ${FOOT}
   </div>`;
 }
@@ -1141,15 +1546,97 @@ function pageAppendixA(){
   </div>`;
 }
 
-function pageAppendixB(){
+/* ---- Appendix B: Risk Assessment (fixed assessment data) ---- */
+const RAMS_LIKELY_HARMS = ["Fatality","Fractures / broken bones","Burn injury","Crush injury","Head injury",
+  "Permanent loss or reduction in sight","Permanent loss or reduction in hearing","Amputation",
+  "Sprain, strain or musculoskeletal injury","Cut, abrasion, laceration or bruise","Long term health effects",
+  "Short term health effects"];
+
+/* hazard, persons affected, [sevWithout,likWithout,ratingWithout], [sevWith,likWith,ratingWith] */
+const RAMS_SUMMARY = [
+  ["Unauthorised access","Apprentice, Operative, Supervisor, Management, Client",[4,5,"High"],[4,4,"High"]],
+  ["Strike of person / property / equipment by falling object","Apprentice, Operative, Supervisor, Management",[5,3,"High"],[4,3,"Medium"]],
+  ["Contact with electricity","Apprentice, Operative, Supervisor, Management, Client",[4,3,"Medium"],[4,3,"Medium"]],
+  ["Fall of person / object from height","Apprentice, Operative, Supervisor, Management, Client",[4,3,"Medium"],[4,3,"Medium"]],
+  ["Inclement / extreme weather","Apprentice, Operative, Supervisor",[4,3,"Medium"],[4,3,"Medium"]],
+  ["Flying debris / ejected particles","Apprentice, Operative, Supervisor, Management",[3,3,"Medium"],[3,3,"Medium"]],
+  ["Manual handling","Operative, Supervisor",[3,3,"Medium"],[3,3,"Medium"]],
+  ["Exposure to noise","Operative, Supervisor",[2,3,"Low"],[2,3,"Low"]],
+  ["Exposure to vibration","Operative",[2,3,"Low"],[2,3,"Low"]],
+];
+const rkClass = r => r==="High"?"rk-h":r==="Medium"?"rk-m":"rk-l";
+
+/* hazards label, control measure (verbatim) */
+const RAMS_CONTROLS = [
+  ["Contact with electricity; Exposure to noise; Exposure to vibration; Flying debris / ejected particles","All new tools, equipment or machinery are checked before first use to ensure they have the CE Standard Mark, a 'Declaration of Conformity', that there are no obvious accessible dangerous moving parts, and the location of the machine does not cause additional hazards."],
+  ["Contact with electricity","The supply voltage will always be within the operating range of the selected tool. Wherever possible, 110V tools shall be used in construction applications. Portable construction and refurbishment site tools are 110V and subject to 3 monthly PA testing as per industry best practice, marked with a PA testing sticker and paper copy records kept for monitoring purposes. Any 240V or 415V portable electric equipment used in a construction or refurbishment setting is fitted with RCD."],
+  ["Exposure to noise; Flying debris / ejected particles; Unauthorised access","A safety exclusion zone is established around the perimeter of the works with suitable signage, barriers and screening as necessary. Authorised persons only are permitted to enter the exclusion zone."],
+  ["Contact with electricity; Exposure to noise","Worn, warped, blunted, defective or damaged items / tools are immediately removed from work area to designated repair location or disposed of immediately to prevent unauthorised or unintended use."],
+  ["Contact with electricity","All damaged and defective portable electrical tools are immediately taken out of use, reported to the supervisor and disposed of or clearly marked as being defective and not for use."],
+  ["Contact with electricity; Exposure to noise; Flying debris / ejected particles","Only suitably trained, competent and authorised personnel are allowed to use tools, equipment and machinery. They are instructed in the safe use and appropriate selection of items and associated parts or accessories, storage, PPE requirements, emergency requirements and procedures, use of guarding, interlocks and other required control measures specific to each item, process and particular activity, and how to inspect and check the equipment prior to use. All guards are installed in accordance with the manufacturers instructions, are appropriate for the equipment being used and are in place at all times the equipment is in operation."],
+  ["Contact with electricity; Exposure to noise","Suitable inspection, cleaning and maintenance regime is in place to ensure all items remain in safe working condition including annual thorough inspection, recorded weekly inspections and daily user checks where appropriate, in accordance with legislative requirements and manufacturer's recommendations."],
+  ["Flying debris / ejected particles","Abrasive Wheels are used in accordance with the principles of HSG17 &ndash; Safety in the Use of Abrasive Wheels."],
+  ["Flying debris / ejected particles","The condition of the blade / disc / wheel / bit is monitored and replaced when necessary. When changing accessories, the blade / disc / wheel / bit is inspected to ensure that it is of the correct type for the item and material being worked, and that it is in good condition."],
+  ["Contact with electricity","All electrical tools selected are either earthed or double insulated."],
+  ["Contact with electricity","All portable electric tools and cables are inspected before use, especially for cracked casing, abrasion, splits and charring."],
+  ["Contact with electricity","Only trained and competent users are allowed to use fixed electrical office equipment. Training includes information on the hazards, authorisation for attempting repairs, and associated COSHH information for any hazardous substances involved. Items could comprise: computers, printers, screens, telephones, faxes, photocopiers, vending machines, kettles, microwaves, fridges, coffee machines, binding, laminating and shredding machines."],
+  ["Contact with electricity","Staff are trained to spot and report any defective plugs, discoloured sockets, charring or burning smells or damaged cable / equipment. Defective equipment is taken out of use immediately and relocated to repair area or disposed of."],
+  ["Contact with electricity","Planned preventative maintenance systems are implemented whereby all equipment is regularly inspected, tested and maintained in accordance with the manufacturer's recommendations, including Portable Appliance Testing (PAT) where required. Repair, inspection and maintenance of fixed electrical items is only carried out by authorised, trained and competent persons."],
+  ["Flying debris / ejected particles","Suitable eye protection has been provided with appropriate impact resistance, commensurate to the potential speed and type of projectile hazard generated by the specific item in use and material being worked. Exact type and grade of eye protection required for task is specified in writing."],
+  ["Flying debris / ejected particles","Inclusion of eye wash materials in first aid kit and appropriately trained first aiders available where potential hazards to eyes have been identified."],
+  ["Flying debris / ejected particles","Operators do not apply excessive pressure during the operation of the tool or machine and ensure that the correct speed / torque / settings are used appropriate to the material / tool and part being used. No bumping or forcing of materials or equipment is allowed. Where items are powered, slow start-up speeds are used as appropriate, testing for material workability and any potential kickback or catching."],
+  ["Strike of person / property / equipment by falling object; Unauthorised access","A Safe Working Zone is established with personnel excluded wherever possible through the use of appropriate barriers and signage."],
+  ["Unauthorised access","Drivers of delivery vehicles, and drivers in general, are subject to a suitable induction including traffic segregation measures, details of dedicated unloading areas, no-go areas and loading restrictions."],
+  ["Unauthorised access","Parking facilities are suitably segregated from working areas and plant traffic routes, with provision of clear pedestrian signage and lighting where possible."],
+  ["Strike of person / property / equipment by falling object","Supervisors monitor plant and equipment operations to ensure that they are being carried out correctly."],
+  ["Inclement / extreme weather","Suitable procedures are in place for logistics and planning to ensure that safety controls are integrated into working practices and are maintained, for example: working in adverse weather conditions, working hours restrictions, required rest breaks, and work schedules."],
+  ["Inclement / extreme weather","Vehicle drivers are only allowed to park and unload in safe conditions: they are advised to assess the environment for gradients, poor ground conditions, holes / voids and for adverse weather conditions."],
+  ["Contact with electricity","Live electrical works will never be carried out."],
+  ["Contact with electricity","All areas, circuits and systems are considered and assumed live until certified and proved otherwise, prior to any works commencing."],
+  ["Contact with electricity; Unauthorised access","All persons involved in works are required to have a full working knowledge of isolation, lock-off procedures and protocols. Physical barriers are inserted wherever possible."],
+  ["Contact with electricity","Earthing is in place before carrying out works on 'dead' equipment."],
+  ["Contact with electricity","All circuits and parts are proved to be 'dead' with suitably insulated tools and working methods."],
+  ["Contact with electricity","Only competent JIB qualified electricians are appointed to carry out electrical works. They are required to maintain their qualifications to current regulations and IET guidance editions."],
+  ["Contact with electricity","All tools used during electrical works are insulated and, if required, flame resistant PPE is used, including the use of insulating mats."],
+  ["Contact with electricity","All staff working on electrical systems are trained in the emergency procedures to take should the operative be subject to electric shock, including electricity isolation points, first aid, and raising the alarm."],
+  ["Fall of person / object from height; Inclement / extreme weather; Strike by falling object","Weather conditions are monitored and taken into consideration for all work at height activities, especially wet, windy and freezing conditions. Works are stopped in adverse or worsening weather conditions."],
+  ["Fall of person / object from height","Ground and floor conditions are assessed for suitability prior to the erection and set up of any access equipment."],
+  ["Fall of person / object from height","Defective, damaged, worn or otherwise unsafe work-at-height equipment or accessories is completely removed from site immediately upon identification, or removed to manager's secure location to prevent accidental or unintended reuse."],
+  ["Fall of person / object from height; Strike by falling object; Unauthorised access","All reasonably practicable measures are taken to prevent unauthorised access to areas below and around work at height through the establishment of exclusion zones with suitable barriers, signage and guards."],
+  ["Fall of person / object from height","The work at height hierarchy is used to assess all work at height activities; wherever possible work at height activities are avoided."],
+  ["Fall of person / object from height; Strike by falling object","Work at height equipment and accessories are maintained in good order in accordance with manufacturer's instructions and best practice. It is subject to regular recorded user checks, regular inspection checks and statutory inspections."],
+  ["Fall of person / object from height; Strike by falling object","Regular refresher training / toolbox talks on work at height is provided to operatives."],
+  ["Fall of person / object from height; Strike by falling object","No horseplay, messing around, improvisation or substitution is permitted when using work at height equipment. Disciplinary consequences are clearly communicated to operatives. Where breaches of WAH safety are detected all members of the team identified are subject to deterrent enforcement actions, to encourage team safety awareness."],
+  ["Fall of person / object from height; Manual handling; Strike by falling object","Suitable consideration is given to distributing materials and tools to the point of work when working at height, providing suitable carrying and transportation aids such as tethers, lanyards, straps, bags, rucksacks, lifting systems, carriers and tool belts to prevent items falling from height wherever possible and to ensure persons can access their workplace at height safely."],
+  ["Strike of person / property / equipment by falling object","Workers are instructed that no items are to be deliberately thrown or dropped from any height, and suitable means of lowering items are to be used, for example use of rubble / debris chutes."],
+];
+
+const RAMS_PPE = [
+  ["Hearing protection","Ear muffs","SNR 30 or more &ndash; A-weighted noise level 100&ndash;105 dB"],
+  ["Hearing protection","Ear plugs","SNR 30 or more &ndash; A-weighted noise level 100&ndash;105 dB"],
+  ["Respiratory protection","Disposable half mask &ndash; particle filter","Filter type P WHITE (Particles)"],
+  ["Hi-Viz","Hi-Viz tabard","Class 1 &ndash; lowest level of conspicuity typically used in areas of minimal risk such as 'off road' activities"],
+  ["Hand protection","Gloves / gloves with a cuff","High durability"],
+  ["Foot protection","Boots","Steel / composite toecap"],
+  ["Eye protection","Goggles","Low energy impact resistance"],
+  ["Eye protection","Safety glasses","Low energy impact resistance"],
+  ["Head protection","Standard hard hat","BS EN 397"],
+];
+
+function ramsHead(){
+  return `${runHead()}<p class="appendix-tab">APPENDIX <b>B</b></p>
+    <p style="font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-size:10px;margin:0 0 2px">Risk Assessment Builder &mdash; ${esc(v("projectName"))} &nbsp;&bull;&nbsp; Ref: ${esc(v("projectRef"))}</p>`;
+}
+
+function pageRamsCover(){
   return `<div class="page">
-    ${runHead()}
-    <p class="appendix-tab">APPENDIX <b>B</b></p>
+    ${ramsHead()}
     <h2>Appendix B &mdash; Risk Assessment &amp; Method Statement</h2>
-    <p><b>${esc(v("ramsTitle"))}</b> &nbsp; <span class="danger-tag">${esc(v("ramsDanger"))}</span></p>
-    <p><b>Reference:</b> ${esc(v("projectRef"))}</p>
+    <p><b>${esc(v("ramsTitle"))}</b> &nbsp; <span class="danger-tag">Danger: ${esc(v("ramsDanger"))}</span></p>
     <table>
-      <tr><th style="width:34%">Location of activity</th><td>${esc(v("ramsLocation"))}</td></tr>
+      <tr><th style="width:32%">Created</th><td>${esc(v("ramsCreated"))}</td></tr>
+      <tr><th>Reference</th><td>${esc(v("projectRef"))}</td></tr>
+      <tr><th>Location of activity</th><td>${esc(v("ramsLocation"))}</td></tr>
       <tr><th>Description of activity</th><td>${esc(v("ramsDesc"))}</td></tr>
       <tr><th>Equipment used</th><td>${nl(v("ramsEquipment"))}</td></tr>
       <tr><th>Supporting documents</th><td>${esc(v("ramsSupporting"))}</td></tr>
@@ -1157,12 +1644,143 @@ function pageAppendixB(){
       <tr><th>Total numbers affected</th><td>${esc(v("ramsNumbers"))}</td></tr>
       <tr><th>Frequency of exposure</th><td>${esc(v("ramsFrequency"))}</td></tr>
       <tr><th>Duration of exposure</th><td>${esc(v("ramsExposure"))}</td></tr>
-      <tr><th>Assessor</th><td>${esc(v("ramsAssessor"))}</td></tr>
+      <tr><th>Assessor signature</th><td>${esc(v("ramsAssessor"))}</td></tr>
       <tr><th>Created on</th><td>${esc(v("ramsCreated"))}</td></tr>
       <tr><th>Review before</th><td>${esc(v("ramsReview"))}</td></tr>
     </table>
-    <p style="font-size:11px;color:#555">The full hazard schedule, control measures and selected PPE are held in
-       the THSP Risk Assessment Builder document attached to this plan.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageRamsHarms(){
+  return `<div class="page">
+    ${ramsHead()}
+    <h3>Likely Harm(s)</h3>
+    <ul>${RAMS_LIKELY_HARMS.map(h=>`<li>${h}</li>`).join("")}</ul>
+    ${FOOT}
+  </div>`;
+}
+
+function pageRamsSummary(){
+  const rows=RAMS_SUMMARY.map(r=>`<tr>
+      <td class="haz">${r[0]}</td><td class="aff">${r[1]}</td>
+      <td>${r[2][0]}</td><td>${r[2][1]}</td><td class="${rkClass(r[2][2])}">${r[2][2]}</td>
+      <td>${r[3][0]}</td><td>${r[3][1]}</td><td class="${rkClass(r[3][2])}">${r[3][2]}</td></tr>`).join("");
+  return `<div class="page">
+    ${ramsHead()}
+    <h3>Risk Summary</h3>
+    <table class="rs">
+      <tr><th rowspan="2">Hazard identified</th><th rowspan="2">Persons affected</th>
+          <th colspan="3">Risk rating WITHOUT controls</th><th colspan="3">Risk rating WITH controls</th></tr>
+      <tr><th>Sev.</th><th>Lik.</th><th>Rating</th><th>Sev.</th><th>Lik.</th><th>Rating</th></tr>
+      ${rows}
+    </table>
+    <div class="keygrid">
+      <div><h4>Severity</h4><ul>
+        <li>1 = Trivial / minor injury</li><li>2 = Moderate injury / minor property damage</li>
+        <li>3 = Major injury to one person / short-term health effects</li>
+        <li>4 = Major injury to several people / long-term health effects / major property damage</li>
+        <li>5 = Fatality</li></ul></div>
+      <div><h4>Likelihood</h4><ul>
+        <li>1 = Improbable occurrence</li><li>2 = Remote occurrence</li><li>3 = Possible occurrence</li>
+        <li>4 = Probable occurrence</li><li>5 = Likely occurrence</li></ul></div>
+      <div><h4>Risk (Severity &times; Likelihood)</h4><ul>
+        <li><span class="rk-h">15&ndash;25 = High risk</span></li>
+        <li><span class="rk-m">8&ndash;12 = Medium risk</span></li>
+        <li><span class="rk-l">1&ndash;6 = Low risk</span></li></ul></div>
+    </div>
+    ${FOOT}
+  </div>`;
+}
+
+function pageRamsControls(slice,part,total){
+  const rows=slice.map(c=>`<tr><td>${c[0]}</td><td>${c[1]}</td></tr>`).join("");
+  return `<div class="page">
+    ${ramsHead()}
+    <h3>Control Measures${total>1?` (${part} of ${total})`:""}</h3>
+    <table class="cm"><tr><th>Hazards</th><th>Control measure</th></tr>${rows}</table>
+    ${FOOT}
+  </div>`;
+}
+
+function pageRamsActions(){
+  return `<div class="page">
+    ${ramsHead()}
+    <h3>Additional Control Measure Action List</h3>
+    <table class="cm">
+      <tr><th>Responsibility</th><th>Hazard</th><th>Control measure</th><th>By when</th></tr>
+      <tr><td>Competent Person</td><td>Strike by falling object</td><td>Where possible, load is kept as low as possible to the ground during manoeuvre.</td><td>Ongoing</td></tr>
+      <tr><td>Appointed Person</td><td>Strike by falling object / Unauthorised access</td><td>Suitable secure cordons are established with physical signed barriers and monitored throughout the lift, to exclude any persons not involved in the lift.</td><td>Daily</td></tr>
+      <tr><td>Appointed Person</td><td>Inclement / extreme weather</td><td>Lifting equipment used is as specified and used in accordance with the lifting plan and manufacturer's instructions.</td><td>Daily</td></tr>
+      <tr><td>Appointed Person</td><td>Strike by falling object</td><td>Operators ensure the route of manoeuvre during the lifting operation is adequately lit and in good condition prior to works to minimise the possibility of overturning.</td><td>Daily</td></tr>
+      <tr><td>Employee / Worker / Operative</td><td>Strike by falling object</td><td>Hard hats to standard BS EN 397 are worn to protect against falling objects.</td><td>Daily</td></tr>
+    </table>
+    ${FOOT}
+  </div>`;
+}
+
+function pageRamsPPE(){
+  const rows=RAMS_PPE.map(p=>`<tr><td>${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td></tr>`).join("");
+  return `<div class="page">
+    ${ramsHead()}
+    <h3>Selected PPE for Task</h3>
+    <table><tr><th>Category</th><th>PPE</th><th>Grade / notes</th></tr>${rows}</table>
+    ${FOOT}
+  </div>`;
+}
+
+/* ---- Appendix B: Method Statement (fields editable) ---- */
+function yn(id){ return v(id)==="No" ? "No" : "Yes"; }
+function pageMethod(){
+  const ppe=[["Hard hats","msHardHats"],["Safety boots","msBoots"],["High-vis jackets","msHiVis"],
+    ["Safety gloves","msGloves"],["Eye protection","msEye"],["Hearing protection","msHearing"],["Respiratory","msResp"]];
+  return `<div class="page">
+    ${ramsHead()}
+    <h2>Method Statement</h2>
+    <h3>Project Summary</h3>
+    <table>
+      <tr><th style="width:32%">Project name</th><td>${esc(v("projectName"))}</td></tr>
+      <tr><th>Summary of the project</th><td>${nl(v("msSummary"))}</td></tr>
+      <tr><th>Site address</th><td>${nl(v("siteAddress"))}</td></tr>
+      <tr><th>Project reference</th><td>${esc(v("projectRef"))}</td></tr>
+      <tr><th>Start date</th><td>${esc(v("msStartDate"))}</td></tr>
+      <tr><th>Finish date</th><td>${esc(v("msFinishDate"))}</td></tr>
+      <tr><th>Issue date</th><td>${esc(v("msIssueDate"))}</td></tr>
+      <tr><th>Document number</th><td>${esc(v("msDocNumber"))}</td></tr>
+      <tr><th>Company name</th><td>Mostlane Construction Ltd</td></tr>
+      <tr><th>Address</th><td>${esc(COMPANY_ADDR)}</td></tr>
+    </table>
+    <h3>Health &amp; Safety Contact Details</h3>
+    <table>
+      <tr><th style="width:32%">Project Director</th><td>${esc(v("projectDirector"))} &mdash; ${esc(v("officeTel"))} / ${esc(v("projectDirectorMob"))}</td></tr>
+      <tr><th>Name of works supervisor</th><td>${esc(v("siteManager"))} &mdash; ${esc(v("siteManagerTel"))}</td></tr>
+      <tr><th>Contracts Manager(s)</th><td>${esc(v("contractsManager"))} &mdash; ${esc(v("contractsManagerTel"))}</td></tr>
+    </table>
+    <h3>Health &amp; Safety Procedures</h3>
+    <table>
+      <tr><th style="width:32%">On-site first aider</th><td>${esc(v("msFirstAider"))}</td></tr>
+      <tr><th>Address of nearest hospital</th><td>${esc(v("hospitalName"))}, ${nl(v("hospitalAddress")).replace(/<br>/g,", ")}</td></tr>
+      <tr><th>On-site first aid box location</th><td>${esc(v("msFirstAidBox"))}</td></tr>
+      <tr><th>Designated evacuation meeting point</th><td>${esc(v("msEvacPoint"))}</td></tr>
+    </table>
+    <h3>Work Permits</h3>
+    <table>
+      <tr><th>Permit name</th><th>Finalised?</th></tr>
+      <tr><td>${esc(v("msPermit1"))}</td><td>${esc(v("msPermit1Final"))}</td></tr>
+      <tr><td>${esc(v("msPermit2"))}</td><td>${esc(v("msPermit2Final"))}</td></tr>
+    </table>
+    <h3>Staff Training Requirements</h3>
+    <div class="ms-fill">${nl(v("msTraining"))}</div>
+    <h3>Equipment Needed</h3>
+    <div class="ms-fill">${nl(v("msEquipment"))}</div>
+    <h3>Required Personal Protective Equipment (PPE)</h3>
+    <div class="ms-yesno">${ppe.map(p=>`<div><b>${p[0]}</b>${yn(p[1])}</div>`).join("")}</div>
+    <h3>Waste Disposal Arrangements</h3>
+    <div class="ms-fill">${nl(v("msWaste"))}</div>
+    <h3>Order of Operations</h3>
+    <div class="ms-fill">${nl(v("msOrderOps"))}</div>
+    <h3>Other Important Information</h3>
+    <div class="ms-fill">${nl(v("msOtherInfo"))||"&mdash;"}</div>
     ${FOOT}
   </div>`;
 }
