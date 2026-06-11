@@ -4,21 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mostlane &mdash; Construction Phase H&amp;S Plan Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --brand:#1f4e79;
-    --brand-light:#eaf1f8;
+    --brand:#1b5a9b;          /* Mostlane blue */
+    --brand-dark:#134272;
+    --brand-light:#e7eff6;
     --line:#ccd6e0;
-    --ink:#222;
-    --muted:#666;
+    --ink:#1c2530;
+    --muted:#5a6675;
     --paper:#fff;
+    --head:"Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    --body:"Barlow", Arial, Helvetica, sans-serif;
   }
   *{box-sizing:border-box}
   body{
     margin:0;
-    font-family:Arial, Helvetica, sans-serif;
+    font-family:var(--body);
     color:var(--ink);
-    background:#f4f6f9;
+    background:#eef1f5;
     -webkit-text-size-adjust:100%;
   }
 
@@ -92,32 +98,87 @@
   .hint{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5}
 
   /* ---------- Document (the printable plan) ---------- */
-  .doc-pane{background:#e9edf2}
+  .doc-pane{background:#dce2ea}
   .page{
+    position:relative;
     background:var(--paper);
     width:210mm;
     max-width:100%;
-    min-height:auto;
-    margin:0 auto 18px;
-    padding:22mm 20mm;
-    box-shadow:0 1px 6px rgba(0,0,0,.18);
-    font-size:12px;
-    line-height:1.5;
+    min-height:297mm;
+    margin:0 auto 20px;
+    padding:20mm 18mm 24mm;
+    box-shadow:0 2px 12px rgba(20,40,70,.18);
+    font-size:11.5px;
+    line-height:1.55;
+    color:var(--ink);
   }
-  .doc h1{font-size:18px;text-align:center;color:#000;letter-spacing:.5px;margin:0 0 18px}
-  .doc h2{font-size:15px;color:#000;border-bottom:2px solid #000;padding-bottom:3px;margin:22px 0 10px}
-  .doc h3{font-size:13px;color:#000;margin:16px 0 6px;text-transform:uppercase}
-  .doc h4{font-size:12px;color:#000;margin:12px 0 4px;text-transform:uppercase}
+
+  /* running header on inner pages */
+  .doc .runhead{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border-bottom:2px solid var(--brand);padding-bottom:7px;margin-bottom:16px;
+  }
+  .doc .runhead .rh-logo{height:26px;width:auto}
+  .doc .runhead .rh-meta{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;
+    font-size:10px;color:var(--muted);text-align:right;line-height:1.3}
+  .doc .runhead .rh-meta b{color:var(--brand-dark);font-weight:600}
+
+  /* headings */
+  .doc h1{font-family:var(--head);font-weight:700;font-size:30px;line-height:1.05;
+    color:var(--brand-dark);letter-spacing:.01em;margin:0 0 14px}
+  .doc h2{font-family:var(--head);font-weight:600;font-size:17px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--brand-dark);margin:22px 0 10px;
+    padding:6px 0 6px 12px;border-left:5px solid var(--brand);background:var(--brand-light)}
+  .doc h3{font-family:var(--head);font-weight:600;font-size:13.5px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--brand);margin:16px 0 5px}
+  .doc h4{font-family:var(--head);font-weight:600;font-size:12px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--ink);margin:13px 0 3px}
   .doc p{margin:0 0 9px;text-align:justify}
   .doc ul{margin:0 0 9px;padding-left:20px}
-  .doc table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:11px}
-  .doc th,.doc td{border:1px solid #888;padding:5px 7px;text-align:left;vertical-align:top}
-  .doc th{background:var(--brand-light)}
-  .doc .company-block{font-size:11px;line-height:1.4}
-  .doc .footer-note{font-size:10px;color:#555;border-top:1px solid #ccc;margin-top:24px;padding-top:6px;text-align:center}
-  .doc .appendix-tab{font-size:40px;font-weight:bold;color:var(--brand);text-align:right;margin:0}
-  .doc .val{} /* substituted values inherit styling */
-  .doc .danger-tag{display:inline-block;background:#fde9e9;border:1px solid #c0392b;color:#922;padding:2px 8px;border-radius:4px;font-weight:bold}
+
+  /* tables */
+  .doc table{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:10.8px}
+  .doc th,.doc td{border:1px solid #c4cedb;padding:6px 8px;text-align:left;vertical-align:top}
+  .doc thead th, .doc tr:first-child th{background:var(--brand);color:#fff;font-family:var(--head);
+    text-transform:uppercase;letter-spacing:.04em;font-weight:600;border-color:var(--brand)}
+  .doc th{background:var(--brand-light);color:var(--brand-dark);font-weight:600}
+  .doc tbody tr:nth-child(even) td{background:#f5f8fb}
+
+  /* ----- cover page ----- */
+  .doc .cover{padding:0;overflow:hidden}
+  .doc .cover .band{background:var(--brand);color:#fff;padding:26mm 18mm 16mm;position:relative}
+  .doc .cover .band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--brand-dark)}
+  .doc .cover .cover-logo{background:#fff;display:inline-block;padding:14px 18px;border-radius:4px;margin-bottom:26px}
+  .doc .cover .cover-logo img, .doc .cover .cover-logo svg{height:54px;width:auto;display:block}
+  .doc .cover .kicker{font-family:var(--head);text-transform:uppercase;letter-spacing:.22em;
+    font-size:12px;opacity:.85;margin:0 0 6px}
+  .doc .cover h1{color:#fff;font-size:40px;margin:0}
+  .doc .cover .cover-body{padding:16mm 18mm}
+  .doc .cover .sitecard{border:1px solid var(--line);border-top:4px solid var(--brand);
+    border-radius:4px;padding:14px 16px;margin:0 0 16px;background:#fafcfe}
+  .doc .cover .sitecard .lab{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;
+    font-size:10px;color:var(--muted);margin:0 0 2px}
+  .doc .cover .sitecard .big{font-family:var(--head);font-weight:600;font-size:20px;color:var(--brand-dark);margin:0 0 8px}
+  .doc .cover .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+
+  /* misc */
+  .doc .company-block{font-size:11px;line-height:1.45}
+  .doc .footer-note{margin-top:26px;
+    font-family:var(--head);font-size:9.5px;letter-spacing:.04em;color:var(--muted);
+    border-top:1px solid var(--line);padding-top:5px;display:flex;align-items:center;gap:7px}
+  .doc .footer-note img{max-height:18px}
+  .doc .appendix-tab{font-family:var(--head);font-size:46px;font-weight:700;color:#b4c6d8;
+    text-align:right;margin:0;line-height:1;letter-spacing:.04em}
+  .doc .appendix-tab b{color:var(--brand)}
+  .doc .danger-tag{display:inline-block;background:#fff;border:1.5px solid #c0392b;color:#922;
+    padding:3px 12px;border-radius:20px;font-family:var(--head);text-transform:uppercase;
+    letter-spacing:.05em;font-weight:600;font-size:11px}
+  .doc .route-meta{background:var(--brand-light);border-left:4px solid var(--brand);
+    padding:8px 12px;border-radius:0 4px 4px 0;margin:8px 0}
+  .doc figure{margin:8px 0 14px}
+  .doc figure img{display:block;width:100%;border:1px solid #c4cedb;border-radius:4px}
+  .doc figcaption{font-family:var(--head);text-transform:uppercase;letter-spacing:.05em;
+    font-size:9.5px;color:var(--muted);margin-top:4px}
   .risk-high{background:#f5c6c6}.risk-med{background:#fde9b8}.risk-low{background:#cdeacd}
 
   /* ---------- Print ---------- */
@@ -127,10 +188,12 @@
     .layout{display:block}
     .doc-pane{height:auto;overflow:visible;padding:0;background:#fff}
     .page{
-      box-shadow:none;margin:0;width:auto;padding:14mm 14mm;
+      box-shadow:none;margin:0;width:auto;min-height:auto;padding:14mm 14mm;
       page-break-after:always;
     }
+    .page.cover{padding:0}
     .page:last-child{page-break-after:auto}
+    .doc figure, .doc table, .doc h2{page-break-inside:avoid}
   }
 </style>
 </head>
@@ -175,7 +238,7 @@
    ============================================================ */
 const GROUPS = [
   { title:"Company branding", open:true, fields:[
-    { id:"_brand", label:"Brand colour", type:"color", def:"#1f4e79",
+    { id:"_brand", label:"Brand colour", type:"color", def:"#1b5a9b",
       help:"Used for headings, table headers and accents throughout the plan." },
     { id:"_logo",  label:"Company logo", type:"logo",
       help:"PNG or JPG. Appears on the cover and at the foot of every page. Stored in this browser and included in your backup file." },
@@ -291,7 +354,7 @@ function blankState(){
   GROUPS.forEach(g=>g.fields.forEach(f=>{
     if(f.type==="issues") s[f.id]=[{no:"1",date:"",desc:"First issue",by:""}];
     else if(f.type==="directory") s[f.id]=[emptyContact()];
-    else if(f.type==="color") s[f.id]=f.def||"#1f4e79";   // keep branding on a new job
+    else if(f.type==="color") s[f.id]=f.def||"#1b5a9b";   // keep branding on a new job
     else if(f.type==="logo") s[f.id]=state[f.id]||"";       // keep logo on a new job
     else if(f.id==="_mapsKey") s[f.id]=state[f.id]||"";     // keep maps key on a new job
     else if(f.type==="select") s[f.id]=f.def||"";           // sensible default for toggles
@@ -361,7 +424,7 @@ function buildField(f){
   if(f.type==="textarea"){
     inner+=`<textarea data-id="${f.id}">${esc(v(f.id))}</textarea>`;
   }else if(f.type==="color"){
-    inner+=`<input type="color" data-id="${f.id}" value="${esc(v(f.id)||"#1f4e79")}" style="width:64px;height:34px;padding:2px;cursor:pointer">`;
+    inner+=`<input type="color" data-id="${f.id}" value="${esc(v(f.id)||"#1b5a9b")}" style="width:64px;height:34px;padding:2px;cursor:pointer">`;
   }else if(f.type==="select"){
     inner+=`<select data-id="${f.id}">`+
       f.options.map(o=>`<option ${v(f.id)===o?"selected":""}>${esc(o)}</option>`).join("")+
@@ -553,7 +616,7 @@ function buildCompoundMap(f){
   loadMaps(err=>{
     if(err) return;
     geocodeSite(site=>{
-      const brand=v("_brand")||"#1f4e79";
+      const brand=v("_brand")||"#1b5a9b";
       const center=state.compoundPin||site||{lat:50.8806,lng:-1.8757};
       const map=new google.maps.Map(mapDiv,{center,zoom:18,mapTypeId:"satellite",tilt:0});
       let marker=null,rectangle=null,pinMode=false;
@@ -670,7 +733,7 @@ function buildHospitalFinder(f){
 }
 
 /* ---- static map image URLs for the printed document ---- */
-function brandHex(){ return "0x"+(v("_brand")||"#1f4e79").replace("#",""); }
+function brandHex(){ return "0x"+(v("_brand")||"#1b5a9b").replace("#",""); }
 
 function staticCompoundUrl(){
   if(!mapsAvailable()) return "";
@@ -703,21 +766,35 @@ function staticRouteUrl(){
    ============================================================ */
 let FOOT = "";   // rebuilt on each render so it can include the logo
 
+/* Vector recreation of the Mostlane mark — used as the default when no
+   logo image has been uploaded. The in-app upload overrides this. */
+const DEFAULT_LOGO_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1900 720" role="img" aria-label="Mostlane">'+
+  '<rect x="40" y="40" width="660" height="660" fill="#1b5a9b"/>'+
+  '<path d="M165 600 C150 380 185 215 248 195 C305 188 345 335 374 470 C393 548 421 548 441 470 '+
+  'C475 330 515 190 568 207 C614 230 601 432 597 600" fill="none" stroke="#fff" stroke-width="58" '+
+  'stroke-linecap="round" stroke-linejoin="round"/>'+
+  '<text x="728" y="500" font-family="Barlow, Arial, sans-serif" font-size="360" font-weight="600" '+
+  'letter-spacing="-6" fill="#111">ostlane</text></svg>';
+
 function applyBranding(){
-  const c = v("_brand") || "#1f4e79";
+  const c = v("_brand") || "#1b5a9b";
   document.documentElement.style.setProperty("--brand", c);
-  document.documentElement.style.setProperty("--brand-light", c + "1f"); // light tint
+  document.documentElement.style.setProperty("--brand-light", c + "1c"); // light tint
 }
-function logoImg(maxH){
-  return v("_logo")
-    ? `<img src="${v("_logo")}" alt="company logo" style="max-height:${maxH}px;max-width:260px">`
-    : "";
+
+/* Returns logo markup sized to the given pixel height — the uploaded image
+   if present, otherwise the inline vector mark. */
+function logoMarkup(px){
+  if(v("_logo")) return `<img src="${v("_logo")}" alt="Mostlane" style="height:${px}px;width:auto;max-width:100%;display:block">`;
+  return DEFAULT_LOGO_SVG.replace("<svg ", `<svg style="height:${px}px;width:auto;display:block" `);
 }
 function buildFoot(){
-  const logo = v("_logo")
-    ? `<img src="${v("_logo")}" alt="" style="max-height:24px;vertical-align:middle;margin-right:8px">`
-    : "";
-  FOOT = `<div class="footer-note">${logo}Mostlane Construction LTD &mdash; Construction Phase Health and Safety Plan (Rev 01)</div>`;
+  FOOT = `<div class="footer-note">${logoMarkup(16)}<span>Mostlane Construction Ltd &nbsp;&bull;&nbsp; Construction Phase Health &amp; Safety Plan &nbsp;&bull;&nbsp; Rev 01</span></div>`;
+}
+function runHead(){
+  return `<div class="runhead">${logoMarkup(26)}
+    <div class="rh-meta">Construction Phase H&amp;S Plan<br><b>${esc(v("projectName")||"")}</b></div></div>`;
 }
 
 function issuesRows(){
@@ -751,31 +828,45 @@ function renderDoc(){
 }
 
 function pageCover(){
-  return `<div class="page">
-    ${ v("_logo") ? `<div style="text-align:center;margin-bottom:14px">${logoImg(90)}</div>` : "" }
-    <h1>Construction Phase Health &amp; Safety Plan</h1>
-    <div class="company-block">
-      <b>Mostlane Office:</b><br>
-      Mostlane, Unit A5, Segensworth Business Centre, PO15 5RQ<br>
-      Tel: ${esc(v("officeTel"))}
+  return `<div class="page cover">
+    <div class="band">
+      <div class="cover-logo">${logoMarkup(54)}</div>
+      <p class="kicker">Mostlane Construction Ltd</p>
+      <h1>Construction Phase<br>Health &amp; Safety Plan</h1>
     </div>
-    <h2>Issue Status</h2>
-    <p><b>Site Address</b><br><span class="val">${nl(v("siteAddress"))}</span></p>
-    <table>
-      <tr><th>Issue</th><th>Date</th><th>Description of revision</th><th>Reviewed by</th></tr>
-      ${issuesRows()}
-    </table>
-    <p><b>Project No:</b> ${esc(v("projectNo"))} &nbsp;&nbsp; <b>Project Ref:</b> ${esc(v("projectRef"))}</p>
-    <p>This live document is to remain on site at all times and be used by the project management team in
-       conjunction with the Project Management System Folder. At project completion please return this
-       complete folder to Mostlane Construction Limited.</p>
-    <p><i>${esc(asbestosLine())}</i></p>
-    ${FOOT}
+    <div class="cover-body">
+      <div class="sitecard">
+        <p class="lab">Project</p>
+        <p class="big">${esc(v("projectName"))||"&mdash;"}</p>
+        <p class="lab">Site address</p>
+        <p style="margin:0 0 12px">${nl(v("siteAddress"))}</p>
+        <div class="meta-grid">
+          <div><p class="lab">Project no.</p><p style="margin:0">${esc(v("projectNo"))||"&mdash;"}</p></div>
+          <div><p class="lab">Project ref.</p><p style="margin:0">${esc(v("projectRef"))||"&mdash;"}</p></div>
+        </div>
+      </div>
+
+      <h2>Issue Status</h2>
+      <table>
+        <tr><th>Issue</th><th>Date</th><th>Description of revision</th><th>Reviewed by</th></tr>
+        ${issuesRows()}
+      </table>
+
+      <p>This live document is to remain on site at all times and be used by the project management team in
+         conjunction with the Project Management System (PMS) Folder. At project completion please return the
+         complete folder to Mostlane Construction Ltd.</p>
+      <p class="route-meta"><b>Asbestos:</b> ${esc(asbestosLine())}</p>
+      <p style="font-size:10.5px;color:var(--muted);margin-top:14px">
+         Mostlane Construction Ltd &nbsp;&bull;&nbsp; Unit A5, Segensworth Business Centre, PO15 5RQ
+         &nbsp;&bull;&nbsp; Tel ${esc(v("officeTel"))}</p>
+      ${FOOT}
+    </div>
   </div>`;
 }
 
 function pageDescription(){
   return `<div class="page">
+    ${runHead()}
     <h2>1.0&nbsp;&nbsp;Introduction</h2>
     <p>This document forms the Health &amp; Safety Plan for the project as required under the Construction
        (Design &amp; Management) Regulations 2015. It is a live document to be reviewed and amended throughout
@@ -807,6 +898,7 @@ function pageDescription(){
 
 function pageWelfare(){
   return `<div class="page">
+    ${runHead()}
     <h2>3.0&nbsp;&nbsp;Management of the Project</h2>
     <h3>Welfare Facilities &amp; First Aid</h3>
     <p>${nl(v("welfare"))}</p>
@@ -832,6 +924,7 @@ function pageWelfare(){
 
 function pageSafetyRisks(){
   return `<div class="page">
+    ${runHead()}
     <h2>4.0&nbsp;&nbsp;Arrangements for Controlling Significant Project Risks</h2>
     <h3>4.1&nbsp;&nbsp;Safety Risks</h3>
     <h4>Access &amp; Egress (including deliveries)</h4>
@@ -862,7 +955,8 @@ function pageSafetyRisks(){
 
 function pageAppendixA(){
   return `<div class="page">
-    <p class="appendix-tab">A</p>
+    ${runHead()}
+    <p class="appendix-tab">APPENDIX <b>A</b></p>
     <h2>Appendix A &mdash; Project Directory</h2>
     <p><b>Project No:</b> ${esc(v("projectNo"))} &nbsp;&nbsp; <b>Project Name:</b> ${esc(v("projectName"))}</p>
     <table>
@@ -875,7 +969,8 @@ function pageAppendixA(){
 
 function pageAppendixB(){
   return `<div class="page">
-    <p class="appendix-tab">B</p>
+    ${runHead()}
+    <p class="appendix-tab">APPENDIX <b>B</b></p>
     <h2>Appendix B &mdash; Risk Assessment &amp; Method Statement</h2>
     <p><b>${esc(v("ramsTitle"))}</b> &nbsp; <span class="danger-tag">${esc(v("ramsDanger"))}</span></p>
     <p><b>Reference:</b> ${esc(v("projectRef"))}</p>
@@ -903,14 +998,15 @@ function pageAppendixCDE(){
   const compoundImg  = staticCompoundUrl();
   const routeImg     = staticRouteUrl();
   return `<div class="page">
+    ${runHead()}
     ${ showCompound ? `
-    <p class="appendix-tab">C</p>
+    <p class="appendix-tab">APPENDIX <b>C</b></p>
     <h2>Appendix C &mdash; Site Compound Location &amp; Set-up</h2>
     <p>${nl(v("compoundText"))}</p>
-    ${ compoundImg ? `<img src="${compoundImg}" alt="Compound location map" style="max-width:100%;border:1px solid #888;margin:6px 0">` : "" }
+    ${ compoundImg ? `<figure><img src="${compoundImg}" alt="Compound location map"><figcaption>Site compound &amp; access &mdash; ${esc(v("projectName"))}</figcaption></figure>` : "" }
     ` : "" }
 
-    <p class="appendix-tab">D</p>
+    <p class="appendix-tab">APPENDIX <b>D</b></p>
     <h2>Appendix D &mdash; Contact Details</h2>
     <table>
       <tr><th>Service</th><th>Name(s)</th><th>Company</th><th>Telephone / Mobile</th></tr>
@@ -919,12 +1015,13 @@ function pageAppendixCDE(){
         <td>${esc(r.phone)}${r.phone&&r.mobile?" / ":""}${esc(r.mobile)}</td></tr>`).join("")}
     </table>
 
-    <p class="appendix-tab">E</p>
+    <p class="appendix-tab">APPENDIX <b>E</b></p>
     <h2>Appendix E &mdash; Local Hospital &amp; A&amp;E Department</h2>
     <p><b>${esc(v("hospitalName"))}</b><br>${nl(v("hospitalAddress"))}</p>
-    ${ state.hospitalRouteText ? `<p><b>Driving route from site:</b> ${esc(state.hospitalRouteText)}</p>` : "" }
-    ${ routeImg ? `<img src="${routeImg}" alt="Route from site to hospital" style="max-width:100%;border:1px solid #888;margin:6px 0">` : "" }
+    ${ state.hospitalRouteText ? `<p class="route-meta"><b>Driving route from site:</b> ${esc(state.hospitalRouteText)}</p>` : "" }
+    ${ routeImg ? `<figure><img src="${routeImg}" alt="Route from site to hospital"><figcaption>Route from site to ${esc(v("hospitalName"))}</figcaption></figure>` : "" }
 
+    <p class="appendix-tab">APPENDIX <b>F</b></p>
     <h2>Appendix F &mdash; Mostlane Health &amp; Safety Policy</h2>
     <p>(Sent as a separate email attachment as a protected file.)</p>
     ${FOOT}
@@ -938,15 +1035,18 @@ document.getElementById("btnPrint").addEventListener("click",()=>window.print())
 
 document.getElementById("btnPreview").addEventListener("click",()=>{
   const css   = document.querySelector("style").innerHTML;
-  const brand = v("_brand") || "#1f4e79";
+  const brand = v("_brand") || "#1b5a9b";
   const win   = window.open("", "_blank");
   if(!win){ alert("Please allow pop-ups for this page to open the preview."); return; }
   win.document.write(`<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8">
     <title>${esc(v("projectName")||"H&S Plan")} — Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>${css}</style>
     <style>
-      :root{--brand:${brand};--brand-light:${brand}1f}
-      body{background:#e9edf2;margin:0;padding:18px}
+      :root{--brand:${brand};--brand-light:${brand}1c}
+      body{background:#dce2ea;margin:0;padding:18px}
       .pv-bar{position:sticky;top:-18px;z-index:10;display:flex;gap:8px;justify-content:center;
         padding:12px;margin:-18px -18px 18px;background:#fff;border-bottom:1px solid var(--line)}
       @media print{.pv-bar{display:none}body{background:#fff;padding:0}}

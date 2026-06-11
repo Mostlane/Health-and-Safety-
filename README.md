@@ -60,11 +60,23 @@ fixed — you only edit the per-job items.
 
 ## Company branding
 
+The document is styled in the Mostlane brand out of the box: the **Mostlane
+blue** (`#1b5a9b`), a branded cover page, running page headers, and the
+**Mostlane logo** (a built-in vector recreation of the mark) on the cover and
+in every page footer.
+
 The first group on the form is **Company branding**:
 
-- **Brand colour** — sets the colour of headings, table headers and accents.
-- **Company logo** — upload a PNG/JPG; it appears on the cover and at the foot
-  of every page. It's stored in your browser and saved inside your backup file.
+- **Brand colour** — sets the colour of headings, table headers and accents
+  (defaults to Mostlane blue).
+- **Company logo** — the built-in Mostlane mark is used by default. Upload a
+  PNG/JPG here to override it with your exact logo file; it's stored in your
+  browser and saved inside your backup file.
+
+> The default logo is a vector recreation so the hosted site is branded on any
+> device without uploading. For a pixel-perfect original, either upload your
+> file in the form, or drop the image into the repo and we can wire it in as
+> the permanent default.
 
 ## Maps (optional) — compound plan & nearest A&E
 
