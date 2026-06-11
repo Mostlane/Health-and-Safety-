@@ -147,20 +147,18 @@
 
   /* ----- cover page ----- */
   .doc .cover{padding:0;overflow:hidden}
-  .doc .cover .cover-body{flex:1 0 auto;display:flex;flex-direction:column}
-  .doc .cover .band{background:var(--brand);color:#fff;padding:24mm 18mm 16mm;position:relative;flex:0 0 auto}
+  .doc .cover .cover-logo{background:#fff;padding:14mm 18mm 6mm}
+  .doc .cover .cover-logo img, .doc .cover .cover-logo svg{height:96px;width:auto;max-width:100%;display:block}
+  .doc .cover .band{background:var(--brand);color:#fff;padding:13mm 18mm;position:relative;flex:0 0 auto}
   .doc .cover .band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--brand-dark)}
-  .doc .cover .cover-logo{background:#fff;display:inline-block;padding:14px 18px;border-radius:4px;margin-bottom:26px}
-  .doc .cover .cover-logo img, .doc .cover .cover-logo svg{height:54px;width:auto;display:block}
-  .doc .cover .kicker{font-family:var(--head);text-transform:uppercase;letter-spacing:.08em;
-    font-size:11px;opacity:.9;margin:0 0 10px;line-height:1.4}
-  .doc .cover h1{color:#fff;font-size:40px;margin:0}
-  .doc .cover .cover-body{padding:16mm 18mm}
-  .doc .cover .sitecard{border:1px solid var(--line);border-top:4px solid var(--brand);
-    border-radius:4px;padding:14px 16px;margin:0 0 16px;background:#fafcfe}
+  .doc .cover h1{color:#fff;font-size:38px;margin:0}
+  .doc .cover .cover-body{flex:1 0 auto;display:flex;flex-direction:column;padding:14mm 18mm}
+  .doc .cover .card-row{display:flex;gap:16px;margin:0 0 16px;align-items:stretch}
+  .doc .cover .sitecard{flex:1;border:1px solid var(--line);border-top:4px solid var(--brand);
+    border-radius:4px;padding:14px 16px;margin:0;background:#fafcfe}
   .doc .cover .sitecard .lab{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;
     font-size:10px;color:var(--muted);margin:0 0 2px}
-  .doc .cover .sitecard .big{font-family:var(--head);font-weight:600;font-size:20px;color:var(--brand-dark);margin:0 0 8px}
+  .doc .cover .sitecard .big{font-family:var(--head);font-weight:600;font-size:18px;color:var(--brand-dark);margin:0 0 8px}
   .doc .cover .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
 
   /* misc */
@@ -225,7 +223,7 @@
   <!-- ============ FORM PANE ============ -->
   <div class="form-pane">
     <h1 class="app-title">Construction Phase H&amp;S Plan</h1>
-    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11c</span></p>
+    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11d</span></p>
 
     <div class="toolbar">
       <button id="btnPrint">Save / Print PDF</button>
@@ -999,20 +997,29 @@ function renderDoc(){
 
 function pageCover(){
   return `<div class="page cover">
+    <div class="cover-logo">${logoMarkup(96)}</div>
     <div class="band">
-      <div class="cover-logo">${logoMarkup(54)}</div>
-      <p class="kicker">Mostlane Construction Ltd &nbsp;&bull;&nbsp; ${esc(COMPANY_ADDR)}</p>
       <h1>Construction Phase<br>Health &amp; Safety Plan</h1>
     </div>
     <div class="cover-body">
-      <div class="sitecard">
-        <p class="lab">Project</p>
-        <p class="big">${esc(v("projectName"))||"&mdash;"}</p>
-        <p class="lab">Site address</p>
-        <p style="margin:0 0 12px">${nl(v("siteAddress"))}</p>
-        <div class="meta-grid">
-          <div><p class="lab">Project no.</p><p style="margin:0">${esc(v("projectNo"))||"&mdash;"}</p></div>
-          <div><p class="lab">Project ref.</p><p style="margin:0">${esc(v("projectRef"))||"&mdash;"}</p></div>
+      <div class="card-row">
+        <div class="sitecard">
+          <p class="lab">Project</p>
+          <p class="big">${esc(v("projectName"))||"&mdash;"}</p>
+          <p class="lab">Site address</p>
+          <p style="margin:0 0 12px">${nl(v("siteAddress"))}</p>
+          <div class="meta-grid">
+            <div><p class="lab">Project no.</p><p style="margin:0">${esc(v("projectNo"))||"&mdash;"}</p></div>
+            <div><p class="lab">Project ref.</p><p style="margin:0">${esc(v("projectRef"))||"&mdash;"}</p></div>
+          </div>
+        </div>
+        <div class="sitecard">
+          <p class="lab">Principal Contractor</p>
+          <p class="big">Mostlane Construction Ltd</p>
+          <p class="lab">Address</p>
+          <p style="margin:0 0 12px">${esc(COMPANY_ADDR)}</p>
+          <p class="lab">Office telephone</p>
+          <p style="margin:0">${esc(v("officeTel"))}</p>
         </div>
       </div>
 
@@ -1026,9 +1033,6 @@ function pageCover(){
          conjunction with the Project Management System (PMS) Folder. At project completion please return the
          complete folder to Mostlane Construction Ltd.</p>
       <p class="route-meta"><b>Asbestos:</b> ${esc(asbestosLine())}</p>
-      <p style="font-size:10.5px;color:var(--muted);margin-top:14px">
-         Mostlane Construction Ltd &nbsp;&bull;&nbsp; Unit A5, Segensworth Business Centre, PO15 5RQ
-         &nbsp;&bull;&nbsp; Tel ${esc(v("officeTel"))}</p>
       ${FOOT}
     </div>
   </div>`;
