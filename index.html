@@ -106,22 +106,23 @@
     max-width:100%;
     min-height:297mm;
     margin:0 auto 20px;
-    padding:20mm 18mm 24mm;
+    padding:14mm 16mm 12mm;
     box-shadow:0 2px 12px rgba(20,40,70,.18);
     font-size:11.5px;
     line-height:1.55;
     color:var(--ink);
+    display:flex;            /* lets the footer sit at the bottom of the page */
+    flex-direction:column;
   }
 
-  /* running header on inner pages */
+  /* running header (company details) at the top of every page */
   .doc .runhead{
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-    border-bottom:2px solid var(--brand);padding-bottom:7px;margin-bottom:16px;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex:0 0 auto;
+    border-bottom:2px solid var(--brand);padding-bottom:8px;margin-bottom:14px;
   }
-  .doc .runhead .rh-logo{height:26px;width:auto}
-  .doc .runhead .rh-meta{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;
-    font-size:10px;color:var(--muted);text-align:right;line-height:1.3}
-  .doc .runhead .rh-meta b{color:var(--brand-dark);font-weight:600}
+  .doc .runhead img{height:30px;width:auto}
+  .doc .runhead .rh-co{font-family:var(--head);font-size:9.5px;line-height:1.4;color:var(--muted);text-align:right}
+  .doc .runhead .rh-co b{display:block;font-size:12px;color:var(--brand-dark);letter-spacing:.05em;text-transform:uppercase}
 
   /* headings */
   .doc h1{font-family:var(--head);font-weight:700;font-size:30px;line-height:1.05;
@@ -146,12 +147,13 @@
 
   /* ----- cover page ----- */
   .doc .cover{padding:0;overflow:hidden}
-  .doc .cover .band{background:var(--brand);color:#fff;padding:26mm 18mm 16mm;position:relative}
+  .doc .cover .cover-body{flex:1 0 auto;display:flex;flex-direction:column}
+  .doc .cover .band{background:var(--brand);color:#fff;padding:24mm 18mm 16mm;position:relative;flex:0 0 auto}
   .doc .cover .band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--brand-dark)}
   .doc .cover .cover-logo{background:#fff;display:inline-block;padding:14px 18px;border-radius:4px;margin-bottom:26px}
   .doc .cover .cover-logo img, .doc .cover .cover-logo svg{height:54px;width:auto;display:block}
-  .doc .cover .kicker{font-family:var(--head);text-transform:uppercase;letter-spacing:.22em;
-    font-size:12px;opacity:.85;margin:0 0 6px}
+  .doc .cover .kicker{font-family:var(--head);text-transform:uppercase;letter-spacing:.08em;
+    font-size:11px;opacity:.9;margin:0 0 10px;line-height:1.4}
   .doc .cover h1{color:#fff;font-size:40px;margin:0}
   .doc .cover .cover-body{padding:16mm 18mm}
   .doc .cover .sitecard{border:1px solid var(--line);border-top:4px solid var(--brand);
@@ -163,9 +165,9 @@
 
   /* misc */
   .doc .company-block{font-size:11px;line-height:1.45}
-  .doc .footer-note{margin-top:26px;
+  .doc .footer-note{margin-top:auto;flex:0 0 auto;          /* pinned to the bottom of the page */
     font-family:var(--head);font-size:9.5px;letter-spacing:.04em;color:var(--muted);
-    border-top:1px solid var(--line);padding-top:5px;display:flex;align-items:center;gap:7px}
+    border-top:1px solid var(--line);padding-top:6px;display:flex;align-items:center;gap:7px}
   .doc .footer-note img{max-height:18px}
   .doc .appendix-tab{font-family:var(--head);font-size:46px;font-weight:700;color:#b4c6d8;
     text-align:right;margin:0;line-height:1;letter-spacing:.04em}
@@ -181,14 +183,34 @@
     font-size:9.5px;color:var(--muted);margin-top:4px}
   .risk-high{background:#f5c6c6}.risk-med{background:#fde9b8}.risk-low{background:#cdeacd}
 
+  /* ---------- Map modals (screen only) ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(12,22,38,.55);z-index:1000;
+    display:flex;align-items:center;justify-content:center;padding:18px}
+  .modal{background:#fff;border-radius:8px;width:min(940px,96vw);max-height:94vh;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 44px rgba(0,0,0,.4)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:12px 16px;background:var(--brand);color:#fff;font-family:var(--head);
+    font-size:15px;text-transform:uppercase;letter-spacing:.04em}
+  .modal-head .mx{background:transparent;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;padding:0 4px}
+  .modal-body{padding:14px 16px;overflow:auto}
+  .modal-foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;
+    gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+  .modal .map{height:52vh;min-height:320px;border:1px solid var(--line);border-radius:6px}
+  .modal .map-search{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:5px;margin-bottom:8px;font:inherit}
+  .modal .tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .modal .ae-list{max-height:150px;overflow:auto}
+  .modal .ae-list .repeat-row{margin-bottom:6px}
+  .modal .rinfo{font-family:var(--head);color:var(--brand-dark);font-weight:600}
+
   /* ---------- Print ---------- */
+  @page{size:A4;margin:0}
   @media print{
     body{background:#fff}
-    .form-pane,.toolbar,.no-print{display:none !important}
+    .form-pane,.toolbar,.no-print,.modal-overlay{display:none !important}
     .layout{display:block}
     .doc-pane{height:auto;overflow:visible;padding:0;background:#fff}
     .page{
-      box-shadow:none;margin:0;width:auto;min-height:auto;padding:14mm 14mm;
+      box-shadow:none;margin:0;width:auto;min-height:296mm;padding:13mm 14mm;
       page-break-after:always;
     }
     .page.cover{padding:0}
@@ -312,12 +334,12 @@ const GROUPS = [
     { id:"compoundText", label:"Compound / site set-up notes", type:"textarea",
       def:"Compound Area to include Contractor Parking.\nNo Entry to Main Car Park for Contractors or Deliveries.\nAll Entry for Contractors & Deliveries via Newtown Road.\nBeware of Staff Parking adjacent to compound area." },
     { id:"compoundMap", label:"Compound location map", type:"compoundmap",
-      help:"Drop a pin on the site, draw a box around the compound area, and draw the access route (shown as a red arrow). The map image is added to Appendix C." },
+      help:"Open the map, set the pin / compound box / access-route arrow, frame the zoom you want, then Insert the image into Appendix C." },
   ]},
 
   { title:"7. Local hospital / A&E (Appendix E)", open:false, fields:[
-    { id:"hospitalFinder",  label:"Suggest nearest A&E", type:"hospitalfinder",
-      help:"Searches for A&E departments near the site address (section 1) and adds a driving-route map to Appendix E." },
+    { id:"hospitalFinder",  label:"A&E route planner", type:"hospitalfinder",
+      help:"Open the planner to find/choose a hospital, see the drive distance & time, frame the map, then Insert the route image into Appendix E." },
     { id:"hospitalName",    label:"Nearest A&E hospital", type:"text", def:"Royal Bournemouth Hospital" },
     { id:"hospitalAddress", label:"Hospital address", type:"textarea", def:"Castle Lane\nBournemouth BH7 7DW" },
   ]},
@@ -344,8 +366,8 @@ let state = {};
 
 /* Non-question state used by the map features */
 const AUX_DEFAULTS = {
-  siteLatLng:null, compoundPin:null, compoundRect:null, compoundRoute:null,
-  hospitalLatLng:null, hospitalPolyline:"", hospitalRouteText:""
+  siteLatLng:null, compoundPin:null, compoundRect:null, compoundRoute:null, compoundImg:"",
+  hospitalLatLng:null, hospitalPolyline:"", hospitalRouteText:"", hospitalImg:""
 };
 function ensureAux(){ for(const k in AUX_DEFAULTS) if(!(k in state)) state[k]=AUX_DEFAULTS[k]; }
 
@@ -440,10 +462,10 @@ function buildField(f){
     // shows a distance/time/map for a stale site or hospital.
     if(f.id==="siteAddress"){
       state.siteLatLng=null;                                   // re-geocode the site next time
-      state.hospitalPolyline=""; state.hospitalRouteText="";   // route now invalid
+      state.hospitalPolyline=""; state.hospitalRouteText=""; state.hospitalImg="";  // route now invalid
     }
     if(f.id==="hospitalName"||f.id==="hospitalAddress"){
-      state.hospitalLatLng=null; state.hospitalPolyline=""; state.hospitalRouteText="";
+      state.hospitalLatLng=null; state.hospitalPolyline=""; state.hospitalRouteText=""; state.hospitalImg="";
     }
     persist(); renderDoc();
   });
@@ -597,186 +619,10 @@ function geocodeSite(cb){
   });
 }
 
-function computeRoute(from,to,cb){
-  new google.maps.DirectionsService().route(
-    {origin:from,destination:to,travelMode:google.maps.TravelMode.DRIVING},
-    (res,status)=>{
-      if(status==="OK"&&res.routes[0]){
-        const leg=res.routes[0].legs[0];
-        state.hospitalPolyline=google.maps.geometry.encoding.encodePath(res.routes[0].overview_path);
-        state.hospitalRouteText=leg.distance.text+" • approx. "+leg.duration.text+" by road";
-        persist();
-      }else{ state.hospitalPolyline=""; state.hospitalRouteText=""; }
-      cb&&cb();
-    });
-}
-
-/* ---- compound map widget ---- */
-function buildCompoundMap(f){
-  const box=document.createElement("div");
-  box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+
-                (f.help?`<span class="help">${esc(f.help)}</span>`:"");
-  if(!mapsAvailable()){
-    const m=document.createElement("p"); m.className="help";
-    m.textContent='Add your Google Maps API key under "Company branding" to enable this map.';
-    box.appendChild(m); return box;
-  }
-  const tools=document.createElement("div"); tools.style.margin="6px 0";
-  tools.innerHTML=`<button type="button" class="small secondary" data-act="pin">Drop / move pin</button>
-    <button type="button" class="small secondary" data-act="rect">Draw compound box</button>
-    <button type="button" class="small secondary" data-act="route">Draw access route</button>
-    <button type="button" class="small danger" data-act="clear">Clear map</button>`;
-  box.appendChild(tools);
-  const mapDiv=document.createElement("div");
-  mapDiv.style.cssText="height:300px;border:1px solid var(--line);border-radius:6px";
-  box.appendChild(mapDiv);
-
-  loadMaps(err=>{
-    if(err) return;
-    geocodeSite(site=>{
-      const brand=v("_brand")||"#1b5a9b";
-      const center=state.compoundPin||site||{lat:50.8806,lng:-1.8757};
-      const map=new google.maps.Map(mapDiv,{center,zoom:18,mapTypeId:"satellite",tilt:0});
-      let marker=null,rectangle=null,routeLine=null,pinMode=false;
-
-      function setMarker(pos){
-        const p={lat:pos.lat,lng:pos.lng};
-        if(marker) marker.setPosition(p);
-        else{
-          marker=new google.maps.Marker({position:p,map,draggable:true});
-          marker.addListener("dragend",e=>{
-            state.compoundPin={lat:e.latLng.lat(),lng:e.latLng.lng()}; persist(); renderDoc();
-          });
-        }
-        state.compoundPin=p; persist(); renderDoc();
-      }
-      function attachRect(rect){
-        rectangle=rect;
-        const save=()=>{
-          const b=rectangle.getBounds(),ne=b.getNorthEast(),sw=b.getSouthWest();
-          state.compoundRect=[
-            {lat:ne.lat(),lng:sw.lng()},{lat:ne.lat(),lng:ne.lng()},
-            {lat:sw.lat(),lng:ne.lng()},{lat:sw.lat(),lng:sw.lng()}
-          ]; persist(); renderDoc();
-        };
-        rectangle.addListener("bounds_changed",save); save();
-      }
-      function attachRoute(line){
-        if(routeLine) routeLine.setMap(null);
-        routeLine=line; routeLine.setMap(map); routeLine.setEditable(true);
-        const save=()=>{
-          state.compoundRoute=routeLine.getPath().getArray().map(p=>({lat:p.lat(),lng:p.lng()}));
-          persist(); renderDoc();
-        };
-        const path=routeLine.getPath();
-        ["set_at","insert_at","remove_at"].forEach(ev=>path.addListener(ev,save));
-        save();
-      }
-
-      if(state.compoundPin) setMarker(state.compoundPin);
-      if(state.compoundRoute && state.compoundRoute.length>1){
-        attachRoute(new google.maps.Polyline({
-          path:state.compoundRoute.map(p=>({lat:p.lat,lng:p.lng})),
-          strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}));
-      }
-      if(state.compoundRect){
-        const r=state.compoundRect, lats=r.map(p=>p.lat), lngs=r.map(p=>p.lng);
-        attachRect(new google.maps.Rectangle({
-          bounds:{north:Math.max(...lats),south:Math.min(...lats),east:Math.max(...lngs),west:Math.min(...lngs)},
-          map,editable:true,draggable:true,
-          fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2}));
-      }
-
-      const dm=new google.maps.drawing.DrawingManager({
-        drawingControl:false,
-        rectangleOptions:{fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2,editable:true,draggable:true},
-        polylineOptions:{strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}});
-      dm.setMap(map);
-      dm.addListener("rectanglecomplete",rect=>{
-        if(rectangle) rectangle.setMap(null);
-        dm.setDrawingMode(null); attachRect(rect);
-      });
-      dm.addListener("polylinecomplete",line=>{ dm.setDrawingMode(null); attachRoute(line); });
-      map.addListener("click",e=>{ if(pinMode) setMarker({lat:e.latLng.lat(),lng:e.latLng.lng()}); });
-
-      tools.querySelector('[data-act="pin"]').onclick  =()=>{ pinMode=true;  dm.setDrawingMode(null); };
-      tools.querySelector('[data-act="rect"]').onclick =()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE); };
-      tools.querySelector('[data-act="route"]').onclick=()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE); };
-      tools.querySelector('[data-act="clear"]').onclick=()=>{
-        if(marker){marker.setMap(null);marker=null;}
-        if(rectangle){rectangle.setMap(null);rectangle=null;}
-        if(routeLine){routeLine.setMap(null);routeLine=null;}
-        state.compoundPin=null; state.compoundRect=null; state.compoundRoute=null; persist(); renderDoc();
-      };
-    });
-  });
-  return box;
-}
-
-/* ---- nearest A&E finder ---- */
-function buildHospitalFinder(f){
-  const box=document.createElement("div");
-  box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+
-                (f.help?`<span class="help">${esc(f.help)}</span>`:"");
-  if(!mapsAvailable()){
-    const m=document.createElement("p"); m.className="help";
-    m.textContent='Add your Google Maps API key under "Company branding" to enable A&E suggestions.';
-    box.appendChild(m); return box;
-  }
-  const btn=document.createElement("button");
-  btn.type="button"; btn.className="small"; btn.textContent="Suggest local A&E";
-  box.appendChild(btn);
-  const results=document.createElement("div"); results.style.marginTop="8px"; box.appendChild(results);
-
-  btn.addEventListener("click",()=>{
-    results.innerHTML='<p class="help">Searching…</p>';
-    loadMaps(err=>{
-      if(err){ results.innerHTML=""; return; }
-      geocodeSite(site=>{
-        if(!site){ results.innerHTML='<p class="help">Could not locate the site address — check section 1.</p>'; return; }
-        const svc=new google.maps.places.PlacesService(document.createElement("div"));
-        svc.textSearch({
-          query:"A&E accident and emergency hospital",
-          location:new google.maps.LatLng(site.lat,site.lng), radius:32000
-        },(res,status)=>{
-          if(status!==google.maps.places.PlacesServiceStatus.OK||!res||!res.length){
-            results.innerHTML='<p class="help">No A&E departments found nearby.</p>'; return;
-          }
-          results.innerHTML="";
-          res.slice(0,5).forEach(p=>{
-            const row=document.createElement("div"); row.className="repeat-row";
-            row.innerHTML=`<b>${esc(p.name)}</b><br><span class="help">${esc(p.formatted_address||"")}</span><br>`;
-            const pick=document.createElement("button");
-            pick.type="button"; pick.className="small secondary"; pick.textContent="Use this hospital";
-            pick.addEventListener("click",()=>{
-              state.hospitalName=p.name;
-              state.hospitalAddress=(p.formatted_address||"").replace(/,\s*/g,"\n");
-              state.hospitalLatLng={lat:p.geometry.location.lat(),lng:p.geometry.location.lng()};
-              const ni=document.querySelector('[data-id="hospitalName"]');    if(ni) ni.value=state.hospitalName;
-              const ai=document.querySelector('[data-id="hospitalAddress"]'); if(ai) ai.value=state.hospitalAddress;
-              persist();
-              results.innerHTML='<p class="help">Building route map…</p>';
-              computeRoute(site,state.hospitalLatLng,()=>{
-                results.innerHTML='<p class="help">Added '+esc(state.hospitalName)+' to Appendix E.</p>';
-                renderDoc();
-              });
-            });
-            row.appendChild(pick); results.appendChild(row);
-          });
-        });
-      });
-    });
-  });
-  return box;
-}
-
-/* ---- static map image URLs for the printed document ---- */
 function brandHex(){ return "0x"+(v("_brand")||"#1b5a9b").replace("#",""); }
 
-/* Build a small "caret" (the two wings of an arrowhead) at the end of the
-   access route, angled from the route's final heading. Returns the three
-   points [wingA, tip, wingB] or null. Uses a local planar approximation,
-   which is accurate over the short (~30 m) arrowhead length. */
+/* Small "caret" (the two wings of an arrowhead) at the end of the access
+   route, angled from the route's final heading. Local planar approximation. */
 function routeArrowhead(pts){
   if(!pts || pts.length<2) return null;
   const tip=pts[pts.length-1], prev=pts[pts.length-2];
@@ -784,49 +630,243 @@ function routeArrowhead(pts){
   let dx=(tip.lng-prev.lng)*mPerLng, dy=(tip.lat-prev.lat)*mPerLat;
   const len=Math.hypot(dx,dy); if(!len) return null;
   dx/=len; dy/=len;
-  const ARM=14, ANG=30*Math.PI/180;        // wing length (m) and half-angle
+  const ARM=14, ANG=30*Math.PI/180;
   const wing=(sign)=>{
     const ca=Math.cos(sign*ANG), sa=Math.sin(sign*ANG);
-    // vector pointing back down the route, rotated by ±ANG
     const rx=(-dx)*ca-(-dy)*sa, ry=(-dx)*sa+(-dy)*ca;
     return { lat: tip.lat + (ry*ARM)/mPerLat, lng: tip.lng + (rx*ARM)/mPerLng };
   };
   return [wing(1), tip, wing(-1)];
 }
 
-function staticCompoundUrl(){
-  if(!mapsAvailable()) return "";
-  const pin=state.compoundPin, rect=state.compoundRect, route=state.compoundRoute;
-  const hasRoute = route && route.length>1;
-  if(!pin && !rect && !hasRoute) return "";
+/* Build the static-map image for the inserted COMPOUND view (current centre +
+   zoom from the modal, plus whatever pin / box / route was drawn). */
+function buildCompoundStatic(clat,clng,zoom,maptype){
   const bc=brandHex();
-  const p=["size=640x360","scale=2","maptype=satellite","key="+encodeURIComponent(effectiveMapsKey())];
-  if(pin) p.push("markers=color:red%7C"+pin.lat+","+pin.lng);
-  if(rect){
-    const pts=rect.concat([rect[0]]).map(c=>c.lat+","+c.lng).join("%7C");
+  const p=["size=640x420","scale=2","maptype="+(maptype||"hybrid"),
+           "center="+clat+","+clng,"zoom="+Math.round(zoom),
+           "key="+encodeURIComponent(effectiveMapsKey())];
+  if(state.compoundRect){
+    const pts=state.compoundRect.concat([state.compoundRect[0]]).map(c=>c.lat+","+c.lng).join("%7C");
     p.push("path=color:"+bc+"ff%7Cweight:2%7Cfillcolor:"+bc+"55%7C"+pts);
   }
-  if(hasRoute){
-    const line=route.map(c=>c.lat+","+c.lng).join("%7C");
-    p.push("path=color:0xe02020ff%7Cweight:4%7C"+line);
-    const head=routeArrowhead(route);
-    if(head){
-      const hp=head.map(c=>c.lat+","+c.lng).join("%7C");
-      p.push("path=color:0xe02020ff%7Cweight:4%7C"+hp);
-    }
+  if(state.compoundRoute && state.compoundRoute.length>1){
+    p.push("path=color:0xe02020ff%7Cweight:4%7C"+state.compoundRoute.map(c=>c.lat+","+c.lng).join("%7C"));
+    const head=routeArrowhead(state.compoundRoute);
+    if(head) p.push("path=color:0xe02020ff%7Cweight:4%7C"+head.map(c=>c.lat+","+c.lng).join("%7C"));
   }
-  if(!rect && !hasRoute && pin) p.push("zoom=18");
+  if(state.compoundPin) p.push("markers=color:red%7C"+state.compoundPin.lat+","+state.compoundPin.lng);
   return "https://maps.googleapis.com/maps/api/staticmap?"+p.join("&");
 }
 
-function staticRouteUrl(){
-  if(!mapsAvailable()||!state.hospitalPolyline||!state.siteLatLng||!state.hospitalLatLng) return "";
+/* Build the static-map image for the inserted ROUTE view (current centre +
+   zoom, S/H markers and the driving polyline). */
+function buildRouteStatic(clat,clng,zoom){
   const bc=brandHex();
-  const p=["size=640x380","scale=2","key="+encodeURIComponent(effectiveMapsKey())];
+  const p=["size=640x430","scale=2","center="+clat+","+clng,"zoom="+Math.round(zoom),
+           "key="+encodeURIComponent(effectiveMapsKey())];
   p.push("markers=color:green%7Clabel:S%7C"+state.siteLatLng.lat+","+state.siteLatLng.lng);
   p.push("markers=color:red%7Clabel:H%7C"+state.hospitalLatLng.lat+","+state.hospitalLatLng.lng);
   p.push("path=weight:4%7Ccolor:"+bc+"ff%7Cenc:"+encodeURIComponent(state.hospitalPolyline));
   return "https://maps.googleapis.com/maps/api/staticmap?"+p.join("&");
+}
+
+/* ---- generic modal shell ---- */
+function openModal(title){
+  const ov=document.createElement("div"); ov.className="modal-overlay";
+  ov.innerHTML=`<div class="modal"><div class="modal-head"><span>${esc(title)}</span>`+
+    `<button class="mx" type="button" aria-label="Close">&times;</button></div>`+
+    `<div class="modal-body"></div><div class="modal-foot"></div></div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.querySelector(".mx").onclick=close;
+  ov.addEventListener("click",e=>{ if(e.target===ov) close(); });
+  return { body:ov.querySelector(".modal-body"), foot:ov.querySelector(".modal-foot"), close };
+}
+
+/* ---- compound location modal ---- */
+function openCompoundModal(){
+  const {body,foot,close}=openModal("Compound location & access route");
+  body.innerHTML=`<input class="map-search" type="text" placeholder="Search an address or place to move the map…">
+    <div class="tools">
+      <button type="button" class="small secondary" data-act="pin">Drop / move pin</button>
+      <button type="button" class="small secondary" data-act="box">Draw compound box</button>
+      <button type="button" class="small secondary" data-act="route">Draw access route</button>
+      <button type="button" class="small danger" data-act="clear">Clear</button>
+    </div>
+    <div class="map"></div>
+    <p class="help" style="margin:8px 0 0">Pan &amp; zoom to frame the shot and set the pin / box / route, then <b>Insert image</b> — the picture uses exactly what you see.</p>`;
+  foot.innerHTML=`<span class="help">Satellite view</span>
+    <span><button type="button" class="secondary" data-act="cancel">Close</button>
+    <button type="button" data-act="insert">Insert image</button></span>`;
+  loadMaps(err=>{
+    if(err){ body.innerHTML='<p class="help">Google Maps failed to load — check the API key / enabled APIs.</p>'; return; }
+    geocodeSite(site=>{
+      const brand=v("_brand")||"#1b5a9b";
+      const center=state.compoundPin||site||{lat:50.8806,lng:-1.8757};
+      const map=new google.maps.Map(body.querySelector(".map"),
+        {center,zoom:18,mapTypeId:"hybrid",tilt:0,streetViewControl:false});
+      const ac=new google.maps.places.Autocomplete(body.querySelector(".map-search"),{fields:["geometry"]});
+      ac.bindTo("bounds",map);
+      ac.addListener("place_changed",()=>{ const pl=ac.getPlace();
+        if(pl.geometry){ pl.geometry.viewport?map.fitBounds(pl.geometry.viewport):(map.setCenter(pl.geometry.location),map.setZoom(18)); } });
+
+      let marker=null,rectangle=null,routeLine=null,pinMode=false;
+      function setMarker(pos){ const p={lat:pos.lat,lng:pos.lng};
+        if(marker) marker.setPosition(p);
+        else{ marker=new google.maps.Marker({position:p,map,draggable:true});
+          marker.addListener("dragend",e=>{ state.compoundPin={lat:e.latLng.lat(),lng:e.latLng.lng()}; persist(); }); }
+        state.compoundPin=p; persist(); }
+      function attachRect(rect){ rectangle=rect;
+        const save=()=>{ const b=rectangle.getBounds(),ne=b.getNorthEast(),sw=b.getSouthWest();
+          state.compoundRect=[{lat:ne.lat(),lng:sw.lng()},{lat:ne.lat(),lng:ne.lng()},
+            {lat:sw.lat(),lng:ne.lng()},{lat:sw.lat(),lng:sw.lng()}]; persist(); };
+        rectangle.addListener("bounds_changed",save); save(); }
+      function attachRoute(line){ if(routeLine) routeLine.setMap(null);
+        routeLine=line; routeLine.setMap(map); routeLine.setEditable(true);
+        const save=()=>{ state.compoundRoute=routeLine.getPath().getArray().map(p=>({lat:p.lat(),lng:p.lng()})); persist(); };
+        const path=routeLine.getPath(); ["set_at","insert_at","remove_at"].forEach(ev=>path.addListener(ev,save)); save(); }
+
+      if(state.compoundPin) setMarker(state.compoundPin);
+      if(state.compoundRoute && state.compoundRoute.length>1)
+        attachRoute(new google.maps.Polyline({path:state.compoundRoute.map(p=>({lat:p.lat,lng:p.lng})),strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}));
+      if(state.compoundRect){ const r=state.compoundRect,lats=r.map(p=>p.lat),lngs=r.map(p=>p.lng);
+        attachRect(new google.maps.Rectangle({bounds:{north:Math.max(...lats),south:Math.min(...lats),east:Math.max(...lngs),west:Math.min(...lngs)},
+          map,editable:true,draggable:true,fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2})); }
+
+      const dm=new google.maps.drawing.DrawingManager({drawingControl:false,
+        rectangleOptions:{fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2,editable:true,draggable:true},
+        polylineOptions:{strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}});
+      dm.setMap(map);
+      dm.addListener("rectanglecomplete",rect=>{ if(rectangle) rectangle.setMap(null); dm.setDrawingMode(null); attachRect(rect); });
+      dm.addListener("polylinecomplete",line=>{ dm.setDrawingMode(null); attachRoute(line); });
+      map.addListener("click",e=>{ if(pinMode) setMarker({lat:e.latLng.lat(),lng:e.latLng.lng()}); });
+
+      body.querySelector('[data-act="pin"]').onclick  =()=>{ pinMode=true;  dm.setDrawingMode(null); };
+      body.querySelector('[data-act="box"]').onclick  =()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE); };
+      body.querySelector('[data-act="route"]').onclick=()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE); };
+      body.querySelector('[data-act="clear"]').onclick=()=>{
+        if(marker){marker.setMap(null);marker=null;} if(rectangle){rectangle.setMap(null);rectangle=null;} if(routeLine){routeLine.setMap(null);routeLine=null;}
+        state.compoundPin=null; state.compoundRect=null; state.compoundRoute=null; persist(); };
+      foot.querySelector('[data-act="cancel"]').onclick=close;
+      foot.querySelector('[data-act="insert"]').onclick=()=>{
+        const c=map.getCenter();
+        state.compoundImg=buildCompoundStatic(c.lat(),c.lng(),map.getZoom(),map.getMapTypeId());
+        persist(); buildForm(); renderDoc(); close();
+      };
+    });
+  });
+}
+
+/* ---- A&E / route planner modal ---- */
+function openHospitalModal(){
+  const {body,foot,close}=openModal("Local A&E — route planner");
+  body.innerHTML=`<input class="map-search" type="text" placeholder="Search a hospital or destination…">
+    <div class="tools"><button type="button" class="small" data-act="suggest">Suggest local A&amp;E</button></div>
+    <div class="ae-list" data-list></div>
+    <div class="map"></div>
+    <p class="rinfo" data-info style="margin:8px 0 0"></p>`;
+  foot.innerHTML=`<span class="help">Pan &amp; zoom to frame, then Insert</span>
+    <span><button type="button" class="secondary" data-act="cancel">Close</button>
+    <button type="button" data-act="insert">Insert image</button></span>`;
+  const info=body.querySelector("[data-info]"), list=body.querySelector("[data-list]");
+  loadMaps(err=>{
+    if(err){ body.innerHTML='<p class="help">Google Maps failed to load — check the API key / enabled APIs.</p>'; return; }
+    geocodeSite(site=>{
+      const center=site||{lat:50.8806,lng:-1.8757};
+      const map=new google.maps.Map(body.querySelector(".map"),{center,zoom:12,streetViewControl:false});
+      const dr=new google.maps.DirectionsRenderer({map});
+      const ds=new google.maps.DirectionsService();
+      const svc=new google.maps.places.PlacesService(map);
+
+      function chooseDest(name,addr,loc){
+        state.hospitalName=name||"";
+        state.hospitalAddress=(addr||"").replace(/,\s*/g,"\n");
+        state.hospitalLatLng={lat:loc.lat(),lng:loc.lng()};
+        info.textContent="Calculating route…";
+        ds.route({origin:site,destination:loc,travelMode:google.maps.TravelMode.DRIVING},(res,st)=>{
+          if(st==="OK"&&res.routes[0]){
+            dr.setDirections(res);
+            const leg=res.routes[0].legs[0];
+            state.hospitalPolyline=google.maps.geometry.encoding.encodePath(res.routes[0].overview_path);
+            state.hospitalRouteText=leg.distance.text+" • approx. "+leg.duration.text+" by road";
+            info.textContent=state.hospitalRouteText; persist();
+          }else{ info.textContent="Could not calculate a driving route."; }
+        });
+      }
+
+      const ac=new google.maps.places.Autocomplete(body.querySelector(".map-search"),{fields:["name","formatted_address","geometry"]});
+      ac.addListener("place_changed",()=>{ const pl=ac.getPlace(); if(pl.geometry) chooseDest(pl.name,pl.formatted_address,pl.geometry.location); });
+
+      body.querySelector('[data-act="suggest"]').onclick=()=>{
+        if(!site){ list.innerHTML='<p class="help">Site address not found — check section 1.</p>'; return; }
+        list.innerHTML='<p class="help">Searching…</p>';
+        svc.textSearch({query:"A&E accident and emergency hospital",location:new google.maps.LatLng(site.lat,site.lng),radius:32000},(res,st)=>{
+          if(st!==google.maps.places.PlacesServiceStatus.OK||!res||!res.length){ list.innerHTML='<p class="help">No A&E found nearby.</p>'; return; }
+          list.innerHTML="";
+          res.slice(0,6).forEach(p=>{
+            const r=document.createElement("div"); r.className="repeat-row";
+            r.innerHTML=`<b>${esc(p.name)}</b><br><span class="help">${esc(p.formatted_address||"")}</span><br>`;
+            const b=document.createElement("button"); b.type="button"; b.className="small secondary"; b.textContent="Use & route";
+            b.onclick=()=>chooseDest(p.name,p.formatted_address,p.geometry.location);
+            r.appendChild(b); list.appendChild(r);
+          });
+        });
+      };
+
+      // restore a previously chosen hospital/route for editing
+      if(state.hospitalLatLng && site)
+        chooseDest(state.hospitalName||"Hospital",(state.hospitalAddress||"").replace(/\n/g,", "),
+          new google.maps.LatLng(state.hospitalLatLng.lat,state.hospitalLatLng.lng));
+
+      foot.querySelector('[data-act="cancel"]').onclick=close;
+      foot.querySelector('[data-act="insert"]').onclick=()=>{
+        if(!state.hospitalPolyline||!state.siteLatLng||!state.hospitalLatLng){ alert("Pick a hospital and wait for the route to calculate first."); return; }
+        const c=map.getCenter();
+        state.hospitalImg=buildRouteStatic(c.lat(),c.lng(),map.getZoom());
+        persist(); buildForm(); renderDoc(); close();
+      };
+    });
+  });
+}
+
+/* ---- compound field (opens the modal) ---- */
+function buildCompoundMap(f){
+  const box=document.createElement("div");
+  const draw=()=>{
+    box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+(f.help?`<span class="help">${esc(f.help)}</span>`:"");
+    if(!mapsAvailable()){ const m=document.createElement("p"); m.className="help"; m.textContent="Maps unavailable (no API key set)."; box.appendChild(m); return; }
+    const open=document.createElement("button"); open.type="button"; open.className="small";
+    open.textContent=state.compoundImg?"Edit compound map":"Open compound map"; open.onclick=openCompoundModal;
+    box.appendChild(open);
+    if(state.compoundImg){
+      const img=document.createElement("img"); img.src=state.compoundImg;
+      img.style.cssText="display:block;max-width:100%;margin:8px 0;border:1px solid var(--line);border-radius:4px"; box.appendChild(img);
+      const rm=document.createElement("button"); rm.type="button"; rm.className="small danger"; rm.textContent="Remove image";
+      rm.onclick=()=>{ state.compoundImg=""; persist(); draw(); renderDoc(); }; box.appendChild(rm);
+    }else{ const s=document.createElement("p"); s.className="help"; s.textContent="No image inserted yet."; box.appendChild(s); }
+  };
+  draw(); return box;
+}
+
+/* ---- A&E field (opens the route planner modal) ---- */
+function buildHospitalFinder(f){
+  const box=document.createElement("div");
+  const draw=()=>{
+    box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+(f.help?`<span class="help">${esc(f.help)}</span>`:"");
+    if(!mapsAvailable()){ const m=document.createElement("p"); m.className="help"; m.textContent="Maps unavailable (no API key set)."; box.appendChild(m); return; }
+    const open=document.createElement("button"); open.type="button"; open.className="small";
+    open.textContent=state.hospitalImg?"Edit route planner":"Open A&E / route planner"; open.onclick=openHospitalModal;
+    box.appendChild(open);
+    if(state.hospitalRouteText){ const s=document.createElement("p"); s.className="help"; s.style.margin="6px 0 0"; s.textContent=state.hospitalRouteText; box.appendChild(s); }
+    if(state.hospitalImg){
+      const img=document.createElement("img"); img.src=state.hospitalImg;
+      img.style.cssText="display:block;max-width:100%;margin:8px 0;border:1px solid var(--line);border-radius:4px"; box.appendChild(img);
+      const rm=document.createElement("button"); rm.type="button"; rm.className="small danger"; rm.textContent="Remove image";
+      rm.onclick=()=>{ state.hospitalImg=""; persist(); draw(); renderDoc(); }; box.appendChild(rm);
+    }
+  };
+  draw(); return box;
 }
 
 /* ============================================================
@@ -855,9 +895,10 @@ function logoMarkup(px){
 function buildFoot(){
   FOOT = `<div class="footer-note">${logoMarkup(16)}<span>Mostlane Construction Ltd &nbsp;&bull;&nbsp; Construction Phase Health &amp; Safety Plan &nbsp;&bull;&nbsp; Rev 01</span></div>`;
 }
+const COMPANY_ADDR = "Unit A5, Segensworth Business Centre, Segensworth Road, Fareham, PO15 5RQ";
 function runHead(){
-  return `<div class="runhead">${logoMarkup(26)}
-    <div class="rh-meta">Construction Phase H&amp;S Plan<br><b>${esc(v("projectName")||"")}</b></div></div>`;
+  return `<div class="runhead">${logoMarkup(30)}
+    <div class="rh-co"><b>Mostlane Construction Ltd</b>${esc(COMPANY_ADDR)}</div></div>`;
 }
 
 function issuesRows(){
@@ -894,7 +935,7 @@ function pageCover(){
   return `<div class="page cover">
     <div class="band">
       <div class="cover-logo">${logoMarkup(54)}</div>
-      <p class="kicker">Mostlane Construction Ltd</p>
+      <p class="kicker">Mostlane Construction Ltd &nbsp;&bull;&nbsp; ${esc(COMPANY_ADDR)}</p>
       <h1>Construction Phase<br>Health &amp; Safety Plan</h1>
     </div>
     <div class="cover-body">
@@ -1058,8 +1099,8 @@ function pageAppendixB(){
 
 function pageAppendixCDE(){
   const showCompound = v("includeCompound")!=="No";
-  const compoundImg  = staticCompoundUrl();
-  const routeImg     = staticRouteUrl();
+  const compoundImg  = state.compoundImg;
+  const routeImg     = state.hospitalImg;
   return `<div class="page">
     ${runHead()}
     ${ showCompound ? `

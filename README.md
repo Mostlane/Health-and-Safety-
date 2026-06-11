@@ -90,16 +90,23 @@ down in [Google Cloud Console](https://console.cloud.google.com/):
    elsewhere.
 3. Consider setting a billing budget/quota cap as a backstop.
 
-**Compound location (Appendix C)** — set *Include a compound location section?*
-to Yes, then on the satellite map: click **Drop / move pin** to mark the site,
-**Draw compound box** to drag out the compound area, and **Draw access route**
-to click out the entry route (rendered as a **red arrow** on the printed image,
-matching the original plan's "entry via … as shown by red arrow"). The resulting
-image is added to Appendix C. Set it to **No** to leave Appendix C out entirely.
+Both map tools open in a **pop-up window** so you can frame the shot, then click
+**Insert image** to drop the picture into the document. The image always uses
+exactly the view you see, so you control the zoom, map type and labels.
 
-**Nearest A&E (Appendix E)** — click **Suggest local A&E**. It finds A&E
-departments near the site address, lets you pick one (auto-filling the name and
-address), and adds a driving-route map plus distance/time to Appendix E.
+**Compound location (Appendix C)** — set *Include a compound location section?*
+to Yes, then **Open compound map**. The map centres on the site address
+automatically (use the search box to move it). Then: **Drop / move pin**,
+**Draw compound box**, and **Draw access route** (the entry route, rendered as a
+**red arrow**, matching the original plan's "entry via … as shown by red
+arrow"). Frame the view (the default is hybrid satellite *with* road labels) and
+click **Insert image**. Set the section to **No** to leave Appendix C out.
+
+**A&E route planner (Appendix E)** — **Open A&E / route planner**. The map
+centres on the site. Either **Suggest local A&E** (picks from nearby A&E
+departments) or type any hospital into the search box. The driving route, the
+**distance and time** are shown; frame the map and click **Insert image** to add
+it to Appendix E.
 
 > The map images in the PDF are loaded from Google, so you need to be online
 > when you save/print the document.
