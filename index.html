@@ -789,57 +789,70 @@ function openHospitalModal(){
     geocodeSite(site=>{
       const center=site||{lat:50.8806,lng:-1.8757};
       const map=new google.maps.Map(body.querySelector(".map"),{center,zoom:12,streetViewControl:false});
-      const dr=new google.maps.DirectionsRenderer({map});
-      const ds=new google.maps.DirectionsService();
       const svc=new google.maps.places.PlacesService(map);
-      let fbLine=null,sMark=null,hMark=null;
-      function clearFallback(){ [fbLine,sMark,hMark].forEach(o=>o&&o.setMap(null)); fbLine=sMark=hMark=null; }
+      let line=null,sMark=null,hMark=null;
+      function clearOverlay(){ [line,sMark,hMark].forEach(o=>o&&o.setMap(null)); line=sMark=hMark=null; }
       function straightMiles(toLatLng){
         return google.maps.geometry.spherical.computeDistanceBetween(
           new google.maps.LatLng(site.lat,site.lng), toLatLng)/1609.344;
       }
-      // straight-line view used by both the Distance-Matrix and final fallbacks
-      function drawStraight(loc){
-        dr.setMap(null); clearFallback();
-        state.hospitalPolyline="";
-        state.hospitalStraight=[{lat:site.lat,lng:site.lng},{lat:loc.lat(),lng:loc.lng()}];
+      function drawPath(loc,path,geodesic){
+        clearOverlay();
         sMark=new google.maps.Marker({position:site,map,label:"S",title:"Site"});
         hMark=new google.maps.Marker({position:loc,map,label:"H",title:state.hospitalName});
-        fbLine=new google.maps.Polyline({path:[site,loc],geodesic:true,map,strokeColor:v("_brand")||"#1b5a9b",strokeWeight:4});
-        const b=new google.maps.LatLngBounds(); b.extend(site); b.extend(loc); map.fitBounds(b);
+        line=new google.maps.Polyline({path,map,geodesic:!!geodesic,strokeColor:v("_brand")||"#1b5a9b",strokeWeight:4});
+        const b=new google.maps.LatLngBounds(); path.forEach(p=>b.extend(p)); map.fitBounds(b);
+      }
+      // Modern Routes API — the legacy Directions API is not available on newer
+      // Google projects, so we use Routes API (which is enabled) for the road route.
+      function routesRoute(o,d){
+        return fetch("https://routes.googleapis.com/directions/v2:computeRoutes",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","X-Goog-Api-Key":effectiveMapsKey(),
+            "X-Goog-FieldMask":"routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline"},
+          body:JSON.stringify({
+            origin:{location:{latLng:{latitude:o.lat,longitude:o.lng}}},
+            destination:{location:{latLng:{latitude:d.lat,longitude:d.lng}}},
+            travelMode:"DRIVE", polylineEncoding:"ENCODED_POLYLINE"})
+        }).then(r=>r.json());
       }
 
       function chooseDest(name,addr,loc){
         state.hospitalName=name||"";
         state.hospitalAddress=(addr||"").replace(/,\s*/g,"\n");
         state.hospitalLatLng={lat:loc.lat(),lng:loc.lng()};
+        const dest={lat:loc.lat(),lng:loc.lng()};
         info.textContent="Calculating route…"; persist();
-        // 1) Directions API — full road route + distance + time + drawn route
-        ds.route({origin:site,destination:loc,travelMode:google.maps.TravelMode.DRIVING},(res,st)=>{
-          if(st==="OK"&&res.routes[0]){
-            clearFallback(); dr.setMap(map); dr.setDirections(res);
-            const leg=res.routes[0].legs[0];
-            state.hospitalPolyline=google.maps.geometry.encoding.encodePath(res.routes[0].overview_path);
-            state.hospitalStraight=null;
-            state.hospitalRouteText=leg.distance.text+" • approx. "+leg.duration.text+" by road";
+        // 1) Routes API — full road route + drive distance + time
+        routesRoute(site,dest).then(j=>{
+          const rt=j&&j.routes&&j.routes[0];
+          if(rt&&rt.polyline&&rt.polyline.encodedPolyline){
+            const miles=(rt.distanceMeters/1609.344).toFixed(1);
+            const mins=Math.round(parseInt(rt.duration,10)/60);
+            state.hospitalPolyline=rt.polyline.encodedPolyline; state.hospitalStraight=null;
+            state.hospitalRouteText=miles+" miles • approx. "+mins+" mins by road";
+            drawPath(loc, google.maps.geometry.encoding.decodePath(rt.polyline.encodedPolyline), false);
             info.textContent=state.hospitalRouteText; persist(); return;
           }
-          // 2) Distance Matrix API — real drive distance + time (no drawn route)
+          throw new Error((j&&j.error&&j.error.message)||"no route");
+        }).catch(()=>{
+          // 2) Distance Matrix — real drive distance + time (straight line drawn)
           new google.maps.DistanceMatrixService().getDistanceMatrix(
-            {origins:[site],destinations:[loc],travelMode:google.maps.TravelMode.DRIVING},
+            {origins:[site],destinations:[dest],travelMode:google.maps.TravelMode.DRIVING,unitSystem:google.maps.UnitSystem.IMPERIAL},
             (dm,dst)=>{
               const el = dm && dm.rows && dm.rows[0] && dm.rows[0].elements[0];
+              state.hospitalPolyline=""; state.hospitalStraight=[{lat:site.lat,lng:site.lng},dest];
               if(dst==="OK" && el && el.status==="OK"){
-                drawStraight(loc);
                 state.hospitalRouteText=el.distance.text+" • approx. "+el.duration.text+" by road";
+                drawPath(loc,[site,dest],true);
                 info.textContent=state.hospitalRouteText; persist(); return;
               }
               // 3) final fallback — straight-line distance
-              drawStraight(loc);
               const mi=straightMiles(loc);
               state.hospitalRouteText="≈ "+mi.toFixed(1)+" miles (straight line)";
+              drawPath(loc,[site,dest],true);
               info.innerHTML=esc(state.hospitalRouteText)+
-                ` <span class="help">— road routing unavailable (status: ${esc(st)}). Enable the Directions API (or Distance Matrix API) on the Maps key.</span>`;
+                ` <span class="help">— drive distance unavailable. Enable the Routes API or Distance Matrix API on the Maps key.</span>`;
               persist();
             });
         });
