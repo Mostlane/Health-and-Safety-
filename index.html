@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
+<style id="appstyle">
   :root{
     --brand:#1b5a9b;          /* Mostlane blue */
     --brand-dark:#134272;
@@ -798,12 +798,23 @@ function openHospitalModal(){
         return google.maps.geometry.spherical.computeDistanceBetween(
           new google.maps.LatLng(site.lat,site.lng), toLatLng)/1609.344;
       }
+      // straight-line view used by both the Distance-Matrix and final fallbacks
+      function drawStraight(loc){
+        dr.setMap(null); clearFallback();
+        state.hospitalPolyline="";
+        state.hospitalStraight=[{lat:site.lat,lng:site.lng},{lat:loc.lat(),lng:loc.lng()}];
+        sMark=new google.maps.Marker({position:site,map,label:"S",title:"Site"});
+        hMark=new google.maps.Marker({position:loc,map,label:"H",title:state.hospitalName});
+        fbLine=new google.maps.Polyline({path:[site,loc],geodesic:true,map,strokeColor:v("_brand")||"#1b5a9b",strokeWeight:4});
+        const b=new google.maps.LatLngBounds(); b.extend(site); b.extend(loc); map.fitBounds(b);
+      }
 
       function chooseDest(name,addr,loc){
         state.hospitalName=name||"";
         state.hospitalAddress=(addr||"").replace(/,\s*/g,"\n");
         state.hospitalLatLng={lat:loc.lat(),lng:loc.lng()};
         info.textContent="Calculating route…"; persist();
+        // 1) Directions API — full road route + distance + time + drawn route
         ds.route({origin:site,destination:loc,travelMode:google.maps.TravelMode.DRIVING},(res,st)=>{
           if(st==="OK"&&res.routes[0]){
             clearFallback(); dr.setMap(map); dr.setDirections(res);
@@ -811,25 +822,26 @@ function openHospitalModal(){
             state.hospitalPolyline=google.maps.geometry.encoding.encodePath(res.routes[0].overview_path);
             state.hospitalStraight=null;
             state.hospitalRouteText=leg.distance.text+" • approx. "+leg.duration.text+" by road";
-            info.textContent=state.hospitalRouteText; persist();
-          }else{
-            // Directions unavailable (commonly the Directions API isn't enabled
-            // on the key) — fall back to a straight-line distance so the tool
-            // still works, and show the status so it can be fixed.
-            dr.setMap(null);
-            const mi=straightMiles(loc);
-            state.hospitalPolyline="";
-            state.hospitalStraight=[{lat:site.lat,lng:site.lng},{lat:loc.lat(),lng:loc.lng()}];
-            state.hospitalRouteText="≈ "+mi.toFixed(1)+" miles (straight line)";
-            info.innerHTML=esc(state.hospitalRouteText)+
-              ` <span class="help">— road routing unavailable (status: ${esc(st)}). Enable the Directions API on the Maps key for drive distance/time.</span>`;
-            clearFallback();
-            sMark=new google.maps.Marker({position:site,map,label:"S",title:"Site"});
-            hMark=new google.maps.Marker({position:loc,map,label:"H",title:state.hospitalName});
-            fbLine=new google.maps.Polyline({path:[site,loc],geodesic:true,map,strokeColor:v("_brand")||"#1b5a9b",strokeWeight:4});
-            const bnds=new google.maps.LatLngBounds(); bnds.extend(site); bnds.extend(loc); map.fitBounds(bnds);
-            persist();
+            info.textContent=state.hospitalRouteText; persist(); return;
           }
+          // 2) Distance Matrix API — real drive distance + time (no drawn route)
+          new google.maps.DistanceMatrixService().getDistanceMatrix(
+            {origins:[site],destinations:[loc],travelMode:google.maps.TravelMode.DRIVING},
+            (dm,dst)=>{
+              const el = dm && dm.rows && dm.rows[0] && dm.rows[0].elements[0];
+              if(dst==="OK" && el && el.status==="OK"){
+                drawStraight(loc);
+                state.hospitalRouteText=el.distance.text+" • approx. "+el.duration.text+" by road";
+                info.textContent=state.hospitalRouteText; persist(); return;
+              }
+              // 3) final fallback — straight-line distance
+              drawStraight(loc);
+              const mi=straightMiles(loc);
+              state.hospitalRouteText="≈ "+mi.toFixed(1)+" miles (straight line)";
+              info.innerHTML=esc(state.hospitalRouteText)+
+                ` <span class="help">— road routing unavailable (status: ${esc(st)}). Enable the Directions API (or Distance Matrix API) on the Maps key.</span>`;
+              persist();
+            });
         });
       }
 
@@ -1179,7 +1191,7 @@ function pageAppendixCDE(){
 document.getElementById("btnPrint").addEventListener("click",()=>window.print());
 
 document.getElementById("btnPreview").addEventListener("click",()=>{
-  const css   = document.querySelector("style").innerHTML;
+  const css   = document.getElementById("appstyle").innerHTML;  // our stylesheet (not one Google Maps injected)
   const brand = v("_brand") || "#1b5a9b";
   const win   = window.open("", "_blank");
   if(!win){ alert("Please allow pop-ups for this page to open the preview."); return; }
