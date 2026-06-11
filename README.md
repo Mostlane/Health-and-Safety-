@@ -93,9 +93,11 @@ These features use Google Maps and only switch on once you paste a
    repo.)
 
 **Compound location (Appendix C)** — set *Include a compound location section?*
-to Yes, then on the map: click **Drop / move pin** to mark the site, and
-**Draw compound box** to drag out the compound area. The resulting map image is
-added to Appendix C. Set it to **No** to leave Appendix C out entirely.
+to Yes, then on the satellite map: click **Drop / move pin** to mark the site,
+**Draw compound box** to drag out the compound area, and **Draw access route**
+to click out the entry route (rendered as a **red arrow** on the printed image,
+matching the original plan's "entry via … as shown by red arrow"). The resulting
+image is added to Appendix C. Set it to **No** to leave Appendix C out entirely.
 
 **Nearest A&E (Appendix E)** — click **Suggest local A&E**. It finds A&E
 departments near the site address, lets you pick one (auto-filling the name and
