@@ -334,7 +334,7 @@ const GROUPS = [
     { id:"compoundText", label:"Compound / site set-up notes", type:"textarea",
       def:"Compound Area to include Contractor Parking.\nNo Entry to Main Car Park for Contractors or Deliveries.\nAll Entry for Contractors & Deliveries via Newtown Road.\nBeware of Staff Parking adjacent to compound area." },
     { id:"compoundMap", label:"Compound location map", type:"compoundmap",
-      help:"Open the map, set the pin / compound box / access-route arrow, frame the zoom you want, then Insert the image into Appendix C." },
+      help:"Open the map, set the pin / compound area (drag corners & mid-points for any shape) / access-route arrow, choose the area colour, frame the zoom, then Insert the image into Appendix C." },
   ]},
 
   { title:"7. Local hospital / A&E (Appendix E)", open:false, fields:[
@@ -366,8 +366,8 @@ let state = {};
 
 /* Non-question state used by the map features */
 const AUX_DEFAULTS = {
-  siteLatLng:null, compoundPin:null, compoundRect:null, compoundRoute:null, compoundImg:"",
-  hospitalLatLng:null, hospitalPolyline:"", hospitalRouteText:"", hospitalImg:""
+  siteLatLng:null, compoundPin:null, compoundRect:null, compoundRoute:null, compoundImg:"", compoundBoxColor:"",
+  hospitalLatLng:null, hospitalPolyline:"", hospitalStraight:null, hospitalRouteText:"", hospitalImg:""
 };
 function ensureAux(){ for(const k in AUX_DEFAULTS) if(!(k in state)) state[k]=AUX_DEFAULTS[k]; }
 
@@ -462,10 +462,10 @@ function buildField(f){
     // shows a distance/time/map for a stale site or hospital.
     if(f.id==="siteAddress"){
       state.siteLatLng=null;                                   // re-geocode the site next time
-      state.hospitalPolyline=""; state.hospitalRouteText=""; state.hospitalImg="";  // route now invalid
+      state.hospitalPolyline=""; state.hospitalStraight=null; state.hospitalRouteText=""; state.hospitalImg="";
     }
     if(f.id==="hospitalName"||f.id==="hospitalAddress"){
-      state.hospitalLatLng=null; state.hospitalPolyline=""; state.hospitalRouteText=""; state.hospitalImg="";
+      state.hospitalLatLng=null; state.hospitalPolyline=""; state.hospitalStraight=null; state.hospitalRouteText=""; state.hospitalImg="";
     }
     persist(); renderDoc();
   });
@@ -642,13 +642,13 @@ function routeArrowhead(pts){
 /* Build the static-map image for the inserted COMPOUND view (current centre +
    zoom from the modal, plus whatever pin / box / route was drawn). */
 function buildCompoundStatic(clat,clng,zoom,maptype){
-  const bc=brandHex();
+  const col="0x"+(state.compoundBoxColor||v("_brand")||"#1b5a9b").replace("#","");
   const p=["size=640x420","scale=2","maptype="+(maptype||"hybrid"),
            "center="+clat+","+clng,"zoom="+Math.round(zoom),
            "key="+encodeURIComponent(effectiveMapsKey())];
-  if(state.compoundRect){
+  if(state.compoundRect && state.compoundRect.length>1){
     const pts=state.compoundRect.concat([state.compoundRect[0]]).map(c=>c.lat+","+c.lng).join("%7C");
-    p.push("path=color:"+bc+"ff%7Cweight:2%7Cfillcolor:"+bc+"55%7C"+pts);
+    p.push("path=color:"+col+"ff%7Cweight:3%7Cfillcolor:"+col+"55%7C"+pts);
   }
   if(state.compoundRoute && state.compoundRoute.length>1){
     p.push("path=color:0xe02020ff%7Cweight:4%7C"+state.compoundRoute.map(c=>c.lat+","+c.lng).join("%7C"));
@@ -667,7 +667,11 @@ function buildRouteStatic(clat,clng,zoom){
            "key="+encodeURIComponent(effectiveMapsKey())];
   p.push("markers=color:green%7Clabel:S%7C"+state.siteLatLng.lat+","+state.siteLatLng.lng);
   p.push("markers=color:red%7Clabel:H%7C"+state.hospitalLatLng.lat+","+state.hospitalLatLng.lng);
-  p.push("path=weight:4%7Ccolor:"+bc+"ff%7Cenc:"+encodeURIComponent(state.hospitalPolyline));
+  if(state.hospitalPolyline){
+    p.push("path=weight:4%7Ccolor:"+bc+"ff%7Cenc:"+encodeURIComponent(state.hospitalPolyline));
+  }else if(state.hospitalStraight){
+    p.push("path=weight:4%7Ccolor:"+bc+"ff%7Cgeodesic:true%7C"+state.hospitalStraight.map(c=>c.lat+","+c.lng).join("%7C"));
+  }
   return "https://maps.googleapis.com/maps/api/staticmap?"+p.join("&");
 }
 
@@ -690,12 +694,14 @@ function openCompoundModal(){
   body.innerHTML=`<input class="map-search" type="text" placeholder="Search an address or place to move the map…">
     <div class="tools">
       <button type="button" class="small secondary" data-act="pin">Drop / move pin</button>
-      <button type="button" class="small secondary" data-act="box">Draw compound box</button>
+      <button type="button" class="small secondary" data-act="area">Draw / edit compound area</button>
       <button type="button" class="small secondary" data-act="route">Draw access route</button>
       <button type="button" class="small danger" data-act="clear">Clear</button>
+      <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px">Area colour
+        <input type="color" data-areacolor style="width:42px;height:28px;padding:1px;border:1px solid var(--line);border-radius:4px;cursor:pointer"></label>
     </div>
     <div class="map"></div>
-    <p class="help" style="margin:8px 0 0">Pan &amp; zoom to frame the shot and set the pin / box / route, then <b>Insert image</b> — the picture uses exactly what you see.</p>`;
+    <p class="help" style="margin:8px 0 0">Add the area, then drag its corners — drag a faint <b>mid-point handle</b> to add a corner (square → octagon). Pan &amp; zoom to frame, then <b>Insert image</b>.</p>`;
   foot.innerHTML=`<span class="help">Satellite view</span>
     <span><button type="button" class="secondary" data-act="cancel">Close</button>
     <button type="button" data-act="insert">Insert image</button></span>`;
@@ -711,17 +717,24 @@ function openCompoundModal(){
       ac.addListener("place_changed",()=>{ const pl=ac.getPlace();
         if(pl.geometry){ pl.geometry.viewport?map.fitBounds(pl.geometry.viewport):(map.setCenter(pl.geometry.location),map.setZoom(18)); } });
 
-      let marker=null,rectangle=null,routeLine=null,pinMode=false;
+      let marker=null,poly=null,routeLine=null,pinMode=false;
+      let areaColor=state.compoundBoxColor||brand;
+      body.querySelector("[data-areacolor]").value=areaColor;
+
       function setMarker(pos){ const p={lat:pos.lat,lng:pos.lng};
         if(marker) marker.setPosition(p);
         else{ marker=new google.maps.Marker({position:p,map,draggable:true});
           marker.addListener("dragend",e=>{ state.compoundPin={lat:e.latLng.lat(),lng:e.latLng.lng()}; persist(); }); }
         state.compoundPin=p; persist(); }
-      function attachRect(rect){ rectangle=rect;
-        const save=()=>{ const b=rectangle.getBounds(),ne=b.getNorthEast(),sw=b.getSouthWest();
-          state.compoundRect=[{lat:ne.lat(),lng:sw.lng()},{lat:ne.lat(),lng:ne.lng()},
-            {lat:sw.lat(),lng:ne.lng()},{lat:sw.lat(),lng:sw.lng()}]; persist(); };
-        rectangle.addListener("bounds_changed",save); save(); }
+      function attachPoly(polygon){ if(poly) poly.setMap(null);
+        poly=polygon; poly.setMap(map); poly.setEditable(true); poly.setDraggable(true);
+        poly.setOptions({fillColor:areaColor,fillOpacity:.3,strokeColor:areaColor,strokeWeight:2});
+        const save=()=>{ state.compoundRect=poly.getPath().getArray().map(p=>({lat:p.lat(),lng:p.lng()})); persist(); };
+        const path=poly.getPath(); ["set_at","insert_at","remove_at"].forEach(ev=>path.addListener(ev,save));
+        poly.addListener("dragend",save); save(); }
+      function defaultSquare(){ const c=map.getCenter(),lat=c.lat(),lng=c.lng();
+        const dLat=45/111320, dLng=45/(111320*Math.cos(lat*Math.PI/180));
+        return [{lat:lat+dLat,lng:lng-dLng},{lat:lat+dLat,lng:lng+dLng},{lat:lat-dLat,lng:lng+dLng},{lat:lat-dLat,lng:lng-dLng}]; }
       function attachRoute(line){ if(routeLine) routeLine.setMap(null);
         routeLine=line; routeLine.setMap(map); routeLine.setEditable(true);
         const save=()=>{ state.compoundRoute=routeLine.getPath().getArray().map(p=>({lat:p.lat(),lng:p.lng()})); persist(); };
@@ -730,23 +743,24 @@ function openCompoundModal(){
       if(state.compoundPin) setMarker(state.compoundPin);
       if(state.compoundRoute && state.compoundRoute.length>1)
         attachRoute(new google.maps.Polyline({path:state.compoundRoute.map(p=>({lat:p.lat,lng:p.lng})),strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}));
-      if(state.compoundRect){ const r=state.compoundRect,lats=r.map(p=>p.lat),lngs=r.map(p=>p.lng);
-        attachRect(new google.maps.Rectangle({bounds:{north:Math.max(...lats),south:Math.min(...lats),east:Math.max(...lngs),west:Math.min(...lngs)},
-          map,editable:true,draggable:true,fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2})); }
+      if(state.compoundRect && state.compoundRect.length>1)
+        attachPoly(new google.maps.Polygon({paths:state.compoundRect.map(p=>({lat:p.lat,lng:p.lng}))}));
 
       const dm=new google.maps.drawing.DrawingManager({drawingControl:false,
-        rectangleOptions:{fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2,editable:true,draggable:true},
         polylineOptions:{strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}});
       dm.setMap(map);
-      dm.addListener("rectanglecomplete",rect=>{ if(rectangle) rectangle.setMap(null); dm.setDrawingMode(null); attachRect(rect); });
       dm.addListener("polylinecomplete",line=>{ dm.setDrawingMode(null); attachRoute(line); });
       map.addListener("click",e=>{ if(pinMode) setMarker({lat:e.latLng.lat(),lng:e.latLng.lng()}); });
 
+      body.querySelector('[data-areacolor]').addEventListener("input",e=>{
+        areaColor=e.target.value; state.compoundBoxColor=areaColor; persist();
+        if(poly) poly.setOptions({fillColor:areaColor,strokeColor:areaColor}); });
       body.querySelector('[data-act="pin"]').onclick  =()=>{ pinMode=true;  dm.setDrawingMode(null); };
-      body.querySelector('[data-act="box"]').onclick  =()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE); };
+      body.querySelector('[data-act="area"]').onclick =()=>{ pinMode=false; dm.setDrawingMode(null);
+        if(!poly) attachPoly(new google.maps.Polygon({paths:defaultSquare()})); };
       body.querySelector('[data-act="route"]').onclick=()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE); };
       body.querySelector('[data-act="clear"]').onclick=()=>{
-        if(marker){marker.setMap(null);marker=null;} if(rectangle){rectangle.setMap(null);rectangle=null;} if(routeLine){routeLine.setMap(null);routeLine=null;}
+        if(marker){marker.setMap(null);marker=null;} if(poly){poly.setMap(null);poly=null;} if(routeLine){routeLine.setMap(null);routeLine=null;}
         state.compoundPin=null; state.compoundRect=null; state.compoundRoute=null; persist(); };
       foot.querySelector('[data-act="cancel"]').onclick=close;
       foot.querySelector('[data-act="insert"]').onclick=()=>{
@@ -778,20 +792,44 @@ function openHospitalModal(){
       const dr=new google.maps.DirectionsRenderer({map});
       const ds=new google.maps.DirectionsService();
       const svc=new google.maps.places.PlacesService(map);
+      let fbLine=null,sMark=null,hMark=null;
+      function clearFallback(){ [fbLine,sMark,hMark].forEach(o=>o&&o.setMap(null)); fbLine=sMark=hMark=null; }
+      function straightMiles(toLatLng){
+        return google.maps.geometry.spherical.computeDistanceBetween(
+          new google.maps.LatLng(site.lat,site.lng), toLatLng)/1609.344;
+      }
 
       function chooseDest(name,addr,loc){
         state.hospitalName=name||"";
         state.hospitalAddress=(addr||"").replace(/,\s*/g,"\n");
         state.hospitalLatLng={lat:loc.lat(),lng:loc.lng()};
-        info.textContent="Calculating route…";
+        info.textContent="Calculating route…"; persist();
         ds.route({origin:site,destination:loc,travelMode:google.maps.TravelMode.DRIVING},(res,st)=>{
           if(st==="OK"&&res.routes[0]){
-            dr.setDirections(res);
+            clearFallback(); dr.setMap(map); dr.setDirections(res);
             const leg=res.routes[0].legs[0];
             state.hospitalPolyline=google.maps.geometry.encoding.encodePath(res.routes[0].overview_path);
+            state.hospitalStraight=null;
             state.hospitalRouteText=leg.distance.text+" • approx. "+leg.duration.text+" by road";
             info.textContent=state.hospitalRouteText; persist();
-          }else{ info.textContent="Could not calculate a driving route."; }
+          }else{
+            // Directions unavailable (commonly the Directions API isn't enabled
+            // on the key) — fall back to a straight-line distance so the tool
+            // still works, and show the status so it can be fixed.
+            dr.setMap(null);
+            const mi=straightMiles(loc);
+            state.hospitalPolyline="";
+            state.hospitalStraight=[{lat:site.lat,lng:site.lng},{lat:loc.lat(),lng:loc.lng()}];
+            state.hospitalRouteText="≈ "+mi.toFixed(1)+" miles (straight line)";
+            info.innerHTML=esc(state.hospitalRouteText)+
+              ` <span class="help">— road routing unavailable (status: ${esc(st)}). Enable the Directions API on the Maps key for drive distance/time.</span>`;
+            clearFallback();
+            sMark=new google.maps.Marker({position:site,map,label:"S",title:"Site"});
+            hMark=new google.maps.Marker({position:loc,map,label:"H",title:state.hospitalName});
+            fbLine=new google.maps.Polyline({path:[site,loc],geodesic:true,map,strokeColor:v("_brand")||"#1b5a9b",strokeWeight:4});
+            const bnds=new google.maps.LatLngBounds(); bnds.extend(site); bnds.extend(loc); map.fitBounds(bnds);
+            persist();
+          }
         });
       }
 
@@ -804,13 +842,15 @@ function openHospitalModal(){
         svc.textSearch({query:"A&E accident and emergency hospital",location:new google.maps.LatLng(site.lat,site.lng),radius:32000},(res,st)=>{
           if(st!==google.maps.places.PlacesServiceStatus.OK||!res||!res.length){ list.innerHTML='<p class="help">No A&E found nearby.</p>'; return; }
           list.innerHTML="";
-          res.slice(0,6).forEach(p=>{
-            const r=document.createElement("div"); r.className="repeat-row";
-            r.innerHTML=`<b>${esc(p.name)}</b><br><span class="help">${esc(p.formatted_address||"")}</span><br>`;
-            const b=document.createElement("button"); b.type="button"; b.className="small secondary"; b.textContent="Use & route";
-            b.onclick=()=>chooseDest(p.name,p.formatted_address,p.geometry.location);
-            r.appendChild(b); list.appendChild(r);
-          });
+          res.map(p=>({p,mi:straightMiles(p.geometry.location)}))
+             .sort((a,b)=>a.mi-b.mi).slice(0,6)
+             .forEach(({p,mi})=>{
+               const r=document.createElement("div"); r.className="repeat-row";
+               r.innerHTML=`<b>${esc(p.name)}</b> <span class="rinfo">${mi.toFixed(1)} mi</span><br><span class="help">${esc(p.formatted_address||"")}</span><br>`;
+               const b=document.createElement("button"); b.type="button"; b.className="small secondary"; b.textContent="Use & route";
+               b.onclick=()=>chooseDest(p.name,p.formatted_address,p.geometry.location);
+               r.appendChild(b); list.appendChild(r);
+             });
         });
       };
 
@@ -821,7 +861,8 @@ function openHospitalModal(){
 
       foot.querySelector('[data-act="cancel"]').onclick=close;
       foot.querySelector('[data-act="insert"]').onclick=()=>{
-        if(!state.hospitalPolyline||!state.siteLatLng||!state.hospitalLatLng){ alert("Pick a hospital and wait for the route to calculate first."); return; }
+        if(!state.siteLatLng||!state.hospitalLatLng||(!state.hospitalPolyline&&!state.hospitalStraight)){
+          alert("Pick a hospital and wait for the route/distance to calculate first."); return; }
         const c=map.getCenter();
         state.hospitalImg=buildRouteStatic(c.lat(),c.lng(),map.getZoom());
         persist(); buildForm(); renderDoc(); close();
