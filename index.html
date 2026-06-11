@@ -560,7 +560,7 @@ function buildLogo(f){
    (Company branding) overrides it. NOTE: this key is visible in the public
    site source, so it MUST be restricted in Google Cloud to this site's web
    address (HTTP referrer) and to the 5 APIs the tool uses. */
-const DEFAULT_MAPS_KEY = "";   // <-- paste the restricted Mostlane key here
+const DEFAULT_MAPS_KEY = "AIzaSyANo2Q7OehYzHTTgMTxRr5ISamf5IradcM";   // restricted Mostlane key
 function effectiveMapsKey(){ return (v("_mapsKey")||"").trim() || DEFAULT_MAPS_KEY; }
 
 let _mapsReady=false,_mapsLoading=false,_mapsQueue=[];
