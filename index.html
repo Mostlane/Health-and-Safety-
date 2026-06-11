@@ -242,8 +242,8 @@ const GROUPS = [
       help:"Used for headings, table headers and accents throughout the plan." },
     { id:"_logo",  label:"Company logo", type:"logo",
       help:"PNG or JPG. Appears on the cover and at the foot of every page. Stored in this browser and included in your backup file." },
-    { id:"_mapsKey", label:"Google Maps API key (optional)", type:"text",
-      help:"Enables the compound map and the local A&E route map. Create a key in Google Cloud and enable: Maps JavaScript API, Places API, Geocoding API, Directions API and Maps Static API. Restrict the key to your site's web address. Stored only in this browser." },
+    { id:"_mapsKey", label:"Google Maps API key (override)", type:"text",
+      help:"A Mostlane key is already built in, so the map features work without entering anything here. Only fill this in to use a different key (it overrides the built-in one and is stored only in this browser)." },
   ]},
 
   { title:"1. Project & issue details", open:true, fields:[
@@ -312,7 +312,7 @@ const GROUPS = [
     { id:"compoundText", label:"Compound / site set-up notes", type:"textarea",
       def:"Compound Area to include Contractor Parking.\nNo Entry to Main Car Park for Contractors or Deliveries.\nAll Entry for Contractors & Deliveries via Newtown Road.\nBeware of Staff Parking adjacent to compound area." },
     { id:"compoundMap", label:"Compound location map", type:"compoundmap",
-      help:"Drop / move a pin on the site, then draw a box around the compound area. The map image is added to Appendix C." },
+      help:"Drop a pin on the site, draw a box around the compound area, and draw the access route (shown as a red arrow). The map image is added to Appendix C." },
   ]},
 
   { title:"7. Local hospital / A&E (Appendix E)", open:false, fields:[
@@ -344,7 +344,7 @@ let state = {};
 
 /* Non-question state used by the map features */
 const AUX_DEFAULTS = {
-  siteLatLng:null, compoundPin:null, compoundRect:null,
+  siteLatLng:null, compoundPin:null, compoundRect:null, compoundRoute:null,
   hospitalLatLng:null, hospitalPolyline:"", hospitalRouteText:""
 };
 function ensureAux(){ for(const k in AUX_DEFAULTS) if(!(k in state)) state[k]=AUX_DEFAULTS[k]; }
@@ -435,7 +435,16 @@ function buildField(f){
   wrap.innerHTML=inner;
   wrap.querySelector("[data-id]").addEventListener("input",e=>{
     state[f.id]=e.target.value;
-    if(f.id==="siteAddress") state.siteLatLng=null;   // address changed → re-geocode next time
+    // The cached A&E route is only valid for the exact site + hospital it was built
+    // from. Invalidate it whenever any of those inputs change so Appendix E never
+    // shows a distance/time/map for a stale site or hospital.
+    if(f.id==="siteAddress"){
+      state.siteLatLng=null;                                   // re-geocode the site next time
+      state.hospitalPolyline=""; state.hospitalRouteText="";   // route now invalid
+    }
+    if(f.id==="hospitalName"||f.id==="hospitalAddress"){
+      state.hospitalLatLng=null; state.hospitalPolyline=""; state.hospitalRouteText="";
+    }
     persist(); renderDoc();
   });
   if(f.id==="_mapsKey"){   // once a key is entered/removed, rebuild so map widgets activate
@@ -546,8 +555,16 @@ function buildLogo(f){
 /* ============================================================
    4b. GOOGLE MAPS (optional — only active when a key is supplied)
    ============================================================ */
+/* Built-in Google Maps API key. This is used automatically so the map
+   features work without anyone pasting a key. A key entered in the form
+   (Company branding) overrides it. NOTE: this key is visible in the public
+   site source, so it MUST be restricted in Google Cloud to this site's web
+   address (HTTP referrer) and to the 5 APIs the tool uses. */
+const DEFAULT_MAPS_KEY = "AIzaSyANo2Q7OehYzHTTgMTxRr5ISamf5IradcM";   // restricted Mostlane key
+function effectiveMapsKey(){ return (v("_mapsKey")||"").trim() || DEFAULT_MAPS_KEY; }
+
 let _mapsReady=false,_mapsLoading=false,_mapsQueue=[];
-const mapsAvailable = () => !!v("_mapsKey");
+const mapsAvailable = () => !!effectiveMapsKey();
 
 function loadMaps(cb){
   if(_mapsReady){ cb&&cb(); return; }
@@ -563,7 +580,7 @@ function loadMaps(cb){
   s.async=true;
   s.onerror=()=>{ _mapsLoading=false; _mapsQueue.splice(0).forEach(f=>f&&f(new Error("load-failed")));
     alert("Could not load Google Maps. Check the API key and that the required APIs are enabled."); };
-  s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(v("_mapsKey"))+
+  s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(effectiveMapsKey())+
         "&libraries=places,drawing,geometry&callback=__mostlaneMapsReady&v=quarterly";
   document.head.appendChild(s);
 }
@@ -607,6 +624,7 @@ function buildCompoundMap(f){
   const tools=document.createElement("div"); tools.style.margin="6px 0";
   tools.innerHTML=`<button type="button" class="small secondary" data-act="pin">Drop / move pin</button>
     <button type="button" class="small secondary" data-act="rect">Draw compound box</button>
+    <button type="button" class="small secondary" data-act="route">Draw access route</button>
     <button type="button" class="small danger" data-act="clear">Clear map</button>`;
   box.appendChild(tools);
   const mapDiv=document.createElement("div");
@@ -619,7 +637,7 @@ function buildCompoundMap(f){
       const brand=v("_brand")||"#1b5a9b";
       const center=state.compoundPin||site||{lat:50.8806,lng:-1.8757};
       const map=new google.maps.Map(mapDiv,{center,zoom:18,mapTypeId:"satellite",tilt:0});
-      let marker=null,rectangle=null,pinMode=false;
+      let marker=null,rectangle=null,routeLine=null,pinMode=false;
 
       function setMarker(pos){
         const p={lat:pos.lat,lng:pos.lng};
@@ -643,8 +661,24 @@ function buildCompoundMap(f){
         };
         rectangle.addListener("bounds_changed",save); save();
       }
+      function attachRoute(line){
+        if(routeLine) routeLine.setMap(null);
+        routeLine=line; routeLine.setMap(map); routeLine.setEditable(true);
+        const save=()=>{
+          state.compoundRoute=routeLine.getPath().getArray().map(p=>({lat:p.lat(),lng:p.lng()}));
+          persist(); renderDoc();
+        };
+        const path=routeLine.getPath();
+        ["set_at","insert_at","remove_at"].forEach(ev=>path.addListener(ev,save));
+        save();
+      }
 
       if(state.compoundPin) setMarker(state.compoundPin);
+      if(state.compoundRoute && state.compoundRoute.length>1){
+        attachRoute(new google.maps.Polyline({
+          path:state.compoundRoute.map(p=>({lat:p.lat,lng:p.lng})),
+          strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}));
+      }
       if(state.compoundRect){
         const r=state.compoundRect, lats=r.map(p=>p.lat), lngs=r.map(p=>p.lng);
         attachRect(new google.maps.Rectangle({
@@ -655,20 +689,24 @@ function buildCompoundMap(f){
 
       const dm=new google.maps.drawing.DrawingManager({
         drawingControl:false,
-        rectangleOptions:{fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2,editable:true,draggable:true}});
+        rectangleOptions:{fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2,editable:true,draggable:true},
+        polylineOptions:{strokeColor:"#e02020",strokeWeight:4,strokeOpacity:.95}});
       dm.setMap(map);
       dm.addListener("rectanglecomplete",rect=>{
         if(rectangle) rectangle.setMap(null);
         dm.setDrawingMode(null); attachRect(rect);
       });
+      dm.addListener("polylinecomplete",line=>{ dm.setDrawingMode(null); attachRoute(line); });
       map.addListener("click",e=>{ if(pinMode) setMarker({lat:e.latLng.lat(),lng:e.latLng.lng()}); });
 
-      tools.querySelector('[data-act="pin"]').onclick =()=>{ pinMode=true;  dm.setDrawingMode(null); };
-      tools.querySelector('[data-act="rect"]').onclick=()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE); };
+      tools.querySelector('[data-act="pin"]').onclick  =()=>{ pinMode=true;  dm.setDrawingMode(null); };
+      tools.querySelector('[data-act="rect"]').onclick =()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE); };
+      tools.querySelector('[data-act="route"]').onclick=()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE); };
       tools.querySelector('[data-act="clear"]').onclick=()=>{
         if(marker){marker.setMap(null);marker=null;}
         if(rectangle){rectangle.setMap(null);rectangle=null;}
-        state.compoundPin=null; state.compoundRect=null; persist(); renderDoc();
+        if(routeLine){routeLine.setMap(null);routeLine=null;}
+        state.compoundPin=null; state.compoundRect=null; state.compoundRoute=null; persist(); renderDoc();
       };
     });
   });
@@ -735,24 +773,56 @@ function buildHospitalFinder(f){
 /* ---- static map image URLs for the printed document ---- */
 function brandHex(){ return "0x"+(v("_brand")||"#1b5a9b").replace("#",""); }
 
+/* Build a small "caret" (the two wings of an arrowhead) at the end of the
+   access route, angled from the route's final heading. Returns the three
+   points [wingA, tip, wingB] or null. Uses a local planar approximation,
+   which is accurate over the short (~30 m) arrowhead length. */
+function routeArrowhead(pts){
+  if(!pts || pts.length<2) return null;
+  const tip=pts[pts.length-1], prev=pts[pts.length-2];
+  const mPerLat=111320, mPerLng=111320*Math.cos(tip.lat*Math.PI/180);
+  let dx=(tip.lng-prev.lng)*mPerLng, dy=(tip.lat-prev.lat)*mPerLat;
+  const len=Math.hypot(dx,dy); if(!len) return null;
+  dx/=len; dy/=len;
+  const ARM=14, ANG=30*Math.PI/180;        // wing length (m) and half-angle
+  const wing=(sign)=>{
+    const ca=Math.cos(sign*ANG), sa=Math.sin(sign*ANG);
+    // vector pointing back down the route, rotated by ±ANG
+    const rx=(-dx)*ca-(-dy)*sa, ry=(-dx)*sa+(-dy)*ca;
+    return { lat: tip.lat + (ry*ARM)/mPerLat, lng: tip.lng + (rx*ARM)/mPerLng };
+  };
+  return [wing(1), tip, wing(-1)];
+}
+
 function staticCompoundUrl(){
   if(!mapsAvailable()) return "";
-  const pin=state.compoundPin, rect=state.compoundRect;
-  if(!pin && !rect) return "";
+  const pin=state.compoundPin, rect=state.compoundRect, route=state.compoundRoute;
+  const hasRoute = route && route.length>1;
+  if(!pin && !rect && !hasRoute) return "";
   const bc=brandHex();
-  const p=["size=640x360","scale=2","maptype=satellite","key="+encodeURIComponent(v("_mapsKey"))];
+  const p=["size=640x360","scale=2","maptype=satellite","key="+encodeURIComponent(effectiveMapsKey())];
   if(pin) p.push("markers=color:red%7C"+pin.lat+","+pin.lng);
   if(rect){
     const pts=rect.concat([rect[0]]).map(c=>c.lat+","+c.lng).join("%7C");
     p.push("path=color:"+bc+"ff%7Cweight:2%7Cfillcolor:"+bc+"55%7C"+pts);
-  }else if(pin){ p.push("zoom=18"); }
+  }
+  if(hasRoute){
+    const line=route.map(c=>c.lat+","+c.lng).join("%7C");
+    p.push("path=color:0xe02020ff%7Cweight:4%7C"+line);
+    const head=routeArrowhead(route);
+    if(head){
+      const hp=head.map(c=>c.lat+","+c.lng).join("%7C");
+      p.push("path=color:0xe02020ff%7Cweight:4%7C"+hp);
+    }
+  }
+  if(!rect && !hasRoute && pin) p.push("zoom=18");
   return "https://maps.googleapis.com/maps/api/staticmap?"+p.join("&");
 }
 
 function staticRouteUrl(){
   if(!mapsAvailable()||!state.hospitalPolyline||!state.siteLatLng||!state.hospitalLatLng) return "";
   const bc=brandHex();
-  const p=["size=640x380","scale=2","key="+encodeURIComponent(v("_mapsKey"))];
+  const p=["size=640x380","scale=2","key="+encodeURIComponent(effectiveMapsKey())];
   p.push("markers=color:green%7Clabel:S%7C"+state.siteLatLng.lat+","+state.siteLatLng.lng);
   p.push("markers=color:red%7Clabel:H%7C"+state.hospitalLatLng.lat+","+state.hospitalLatLng.lng);
   p.push("path=weight:4%7Ccolor:"+bc+"ff%7Cenc:"+encodeURIComponent(state.hospitalPolyline));
@@ -766,16 +836,9 @@ function staticRouteUrl(){
    ============================================================ */
 let FOOT = "";   // rebuilt on each render so it can include the logo
 
-/* Vector recreation of the Mostlane mark — used as the default when no
-   logo image has been uploaded. The in-app upload overrides this. */
-const DEFAULT_LOGO_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1900 720" role="img" aria-label="Mostlane">'+
-  '<rect x="40" y="40" width="660" height="660" fill="#1b5a9b"/>'+
-  '<path d="M165 600 C150 380 185 215 248 195 C305 188 345 335 374 470 C393 548 421 548 441 470 '+
-  'C475 330 515 190 568 207 C614 230 601 432 597 600" fill="none" stroke="#fff" stroke-width="58" '+
-  'stroke-linecap="round" stroke-linejoin="round"/>'+
-  '<text x="728" y="500" font-family="Barlow, Arial, sans-serif" font-size="360" font-weight="600" '+
-  'letter-spacing="-6" fill="#111">ostlane</text></svg>';
+/* Official Mostlane logo — used as the default when no logo has been uploaded
+   in the form. The in-app upload overrides this. */
+const DEFAULT_LOGO_URL = "https://mostlane.com/wp-content/uploads/2017/06/Mostlane.jpg";
 
 function applyBranding(){
   const c = v("_brand") || "#1b5a9b";
@@ -784,10 +847,10 @@ function applyBranding(){
 }
 
 /* Returns logo markup sized to the given pixel height — the uploaded image
-   if present, otherwise the inline vector mark. */
+   if present, otherwise the official Mostlane logo. */
 function logoMarkup(px){
-  if(v("_logo")) return `<img src="${v("_logo")}" alt="Mostlane" style="height:${px}px;width:auto;max-width:100%;display:block">`;
-  return DEFAULT_LOGO_SVG.replace("<svg ", `<svg style="height:${px}px;width:auto;display:block" `);
+  const src = v("_logo") || DEFAULT_LOGO_URL;
+  return `<img src="${src}" alt="Mostlane" style="height:${px}px;width:auto;max-width:100%;display:block">`;
 }
 function buildFoot(){
   FOOT = `<div class="footer-note">${logoMarkup(16)}<span>Mostlane Construction Ltd &nbsp;&bull;&nbsp; Construction Phase Health &amp; Safety Plan &nbsp;&bull;&nbsp; Rev 01</span></div>`;

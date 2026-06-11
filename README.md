@@ -62,40 +62,40 @@ fixed — you only edit the per-job items.
 
 The document is styled in the Mostlane brand out of the box: the **Mostlane
 blue** (`#1b5a9b`), a branded cover page, running page headers, and the
-**Mostlane logo** (a built-in vector recreation of the mark) on the cover and
-in every page footer.
+**official Mostlane logo** on the cover and in every page footer.
 
 The first group on the form is **Company branding**:
 
 - **Brand colour** — sets the colour of headings, table headers and accents
   (defaults to Mostlane blue).
-- **Company logo** — the built-in Mostlane mark is used by default. Upload a
-  PNG/JPG here to override it with your exact logo file; it's stored in your
-  browser and saved inside your backup file.
-
-> The default logo is a vector recreation so the hosted site is branded on any
-> device without uploading. For a pixel-perfect original, either upload your
-> file in the form, or drop the image into the repo and we can wire it in as
-> the permanent default.
+- **Company logo** — the official Mostlane logo
+  (`https://mostlane.com/wp-content/uploads/2017/06/Mostlane.jpg`) is used by
+  default. Upload a PNG/JPG here to override it for a one-off job; it's stored
+  in your browser and saved inside your backup file.
 
 ## Maps (optional) — compound plan & nearest A&E
 
-These features use Google Maps and only switch on once you paste a
-**Google Maps API key** into the *Company branding* group.
+These features use Google Maps. A **Mostlane API key is built in** (set in
+`DEFAULT_MAPS_KEY` in `index.html`), so the maps work without anyone entering
+anything. You can override it for a one-off by pasting a different key into the
+*Company branding* group.
 
-**One-time setup of a key:**
-1. In [Google Cloud Console](https://console.cloud.google.com/) create a project
-   and an **API key**.
-2. Enable these APIs: **Maps JavaScript API**, **Places API**, **Geocoding API**,
-   **Directions API**, **Maps Static API**.
-3. Restrict the key to your site's web address (HTTP referrer) so it can't be
-   misused. (The key lives only in your browser — it is *not* stored in this
-   repo.)
+**Important — the built-in key is public.** Because this is a static site, the
+key in `DEFAULT_MAPS_KEY` is visible in the page source. It **must** be locked
+down in [Google Cloud Console](https://console.cloud.google.com/):
+1. Enable only these APIs: **Maps JavaScript API**, **Places API**,
+   **Geocoding API**, **Directions API**, **Maps Static API**.
+2. Add an **Application restriction → HTTP referrers** limited to the site's web
+   address (e.g. `https://mostlane.github.io/*`) so the key can't be used
+   elsewhere.
+3. Consider setting a billing budget/quota cap as a backstop.
 
 **Compound location (Appendix C)** — set *Include a compound location section?*
-to Yes, then on the map: click **Drop / move pin** to mark the site, and
-**Draw compound box** to drag out the compound area. The resulting map image is
-added to Appendix C. Set it to **No** to leave Appendix C out entirely.
+to Yes, then on the satellite map: click **Drop / move pin** to mark the site,
+**Draw compound box** to drag out the compound area, and **Draw access route**
+to click out the entry route (rendered as a **red arrow** on the printed image,
+matching the original plan's "entry via … as shown by red arrow"). The resulting
+image is added to Appendix C. Set it to **No** to leave Appendix C out entirely.
 
 **Nearest A&E (Appendix E)** — click **Suggest local A&E**. It finds A&E
 departments near the site address, lets you pick one (auto-filling the name and
