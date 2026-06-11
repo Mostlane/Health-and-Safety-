@@ -28,7 +28,8 @@ bookmark on your phone:
 | Button | What it does |
 |--------|--------------|
 | **Save / Print PDF** | Opens the print dialog — choose *Save as PDF* |
-| **Start new job** | Clears every field so you can begin a fresh job |
+| **Preview PDF** | Opens a clean, full-page preview in a new tab (exactly as it prints) with its own Print button |
+| **Start new job** | Clears the job fields (keeps your logo, brand colour and Maps key) |
 | **Load example** | Re-loads the Lake Road Surgery example |
 | **Backup answers** | Saves your answers to a small `.json` file |
 | **Restore answers** | Loads answers back from a saved `.json` file |
@@ -56,6 +57,52 @@ The form covers every part of the plan that changes between jobs:
 
 The constant legal/policy wording, control measures and company details stay
 fixed — you only edit the per-job items.
+
+## Company branding
+
+The document is styled in the Mostlane brand out of the box: the **Mostlane
+blue** (`#1b5a9b`), a branded cover page, running page headers, and the
+**Mostlane logo** (a built-in vector recreation of the mark) on the cover and
+in every page footer.
+
+The first group on the form is **Company branding**:
+
+- **Brand colour** — sets the colour of headings, table headers and accents
+  (defaults to Mostlane blue).
+- **Company logo** — the built-in Mostlane mark is used by default. Upload a
+  PNG/JPG here to override it with your exact logo file; it's stored in your
+  browser and saved inside your backup file.
+
+> The default logo is a vector recreation so the hosted site is branded on any
+> device without uploading. For a pixel-perfect original, either upload your
+> file in the form, or drop the image into the repo and we can wire it in as
+> the permanent default.
+
+## Maps (optional) — compound plan & nearest A&E
+
+These features use Google Maps and only switch on once you paste a
+**Google Maps API key** into the *Company branding* group.
+
+**One-time setup of a key:**
+1. In [Google Cloud Console](https://console.cloud.google.com/) create a project
+   and an **API key**.
+2. Enable these APIs: **Maps JavaScript API**, **Places API**, **Geocoding API**,
+   **Directions API**, **Maps Static API**.
+3. Restrict the key to your site's web address (HTTP referrer) so it can't be
+   misused. (The key lives only in your browser — it is *not* stored in this
+   repo.)
+
+**Compound location (Appendix C)** — set *Include a compound location section?*
+to Yes, then on the map: click **Drop / move pin** to mark the site, and
+**Draw compound box** to drag out the compound area. The resulting map image is
+added to Appendix C. Set it to **No** to leave Appendix C out entirely.
+
+**Nearest A&E (Appendix E)** — click **Suggest local A&E**. It finds A&E
+departments near the site address, lets you pick one (auto-filling the name and
+address), and adds a driving-route map plus distance/time to Appendix E.
+
+> The map images in the PDF are loaded from Google, so you need to be online
+> when you save/print the document.
 
 ## Changing the questions
 
