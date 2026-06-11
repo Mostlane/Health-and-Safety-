@@ -435,7 +435,16 @@ function buildField(f){
   wrap.innerHTML=inner;
   wrap.querySelector("[data-id]").addEventListener("input",e=>{
     state[f.id]=e.target.value;
-    if(f.id==="siteAddress") state.siteLatLng=null;   // address changed → re-geocode next time
+    // The cached A&E route is only valid for the exact site + hospital it was built
+    // from. Invalidate it whenever any of those inputs change so Appendix E never
+    // shows a distance/time/map for a stale site or hospital.
+    if(f.id==="siteAddress"){
+      state.siteLatLng=null;                                   // re-geocode the site next time
+      state.hospitalPolyline=""; state.hospitalRouteText="";   // route now invalid
+    }
+    if(f.id==="hospitalName"||f.id==="hospitalAddress"){
+      state.hospitalLatLng=null; state.hospitalPolyline=""; state.hospitalRouteText="";
+    }
     persist(); renderDoc();
   });
   if(f.id==="_mapsKey"){   // once a key is entered/removed, rebuild so map widgets activate
