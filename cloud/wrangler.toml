@@ -1,0 +1,13 @@
+name = "mostlane-hs-jobs"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Created by: wrangler d1 create mostlane_hs
+# Paste the database_id it prints below.
+[[d1_databases]]
+binding = "DB"
+database_name = "mostlane_hs"
+database_id = "PASTE_YOUR_D1_DATABASE_ID_HERE"
+
+# APP_TOKEN is NOT stored here — set it as a secret:
+#   wrangler secret put APP_TOKEN

@@ -97,6 +97,25 @@
 
   .hint{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5}
 
+  /* ---------- Library / home screen ---------- */
+  .library{position:fixed;inset:0;z-index:900;background:#eef1f5;overflow:auto;display:none}
+  .library.show{display:block}
+  .lib-inner{max-width:1000px;margin:0 auto;padding:28px 22px 60px}
+  .lib-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+    border-bottom:3px solid var(--brand);padding-bottom:14px;margin-bottom:18px}
+  .lib-head h1{font-family:var(--head);color:var(--brand-dark);font-size:26px;margin:0}
+  .lib-sub{color:var(--muted);font-size:12px;margin:4px 0 0;font-family:var(--head)}
+  .lib-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .lib-status{font-size:13px;color:var(--muted);min-height:18px;margin:0 0 12px}
+  .lib-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .job-card{border:1px solid var(--line);border-top:4px solid var(--brand);border-radius:8px;
+    background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+  .job-card h3{font-family:var(--head);color:var(--brand-dark);font-size:17px;margin:0;line-height:1.2}
+  .job-card .meta{font-size:11px;color:var(--muted);font-family:var(--head);text-transform:uppercase;letter-spacing:.04em}
+  .job-card .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+  .job-card .row button{flex:0 0 auto}
+  .lib-empty{border:1px dashed var(--line);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+
   /* ---------- Document (the printable plan) ---------- */
   .doc-pane{background:#dce2ea}
   .page{
@@ -231,20 +250,42 @@
 </style>
 </head>
 <body>
+
+<!-- ============ LIBRARY / HOME SCREEN ============ -->
+<div id="library" class="library">
+  <div class="lib-inner">
+    <div class="lib-head">
+      <div>
+        <h1>Construction Phase H&amp;S Plans</h1>
+        <p class="lib-sub">Mostlane Construction Ltd &mdash; job library <span style="opacity:.6">&middot; build 2026-06-11g</span></p>
+      </div>
+      <div class="lib-actions">
+        <button id="libNew">+ New job</button>
+        <button id="libRefresh" class="secondary">Refresh</button>
+        <button id="libCloud" class="secondary">Cloud settings</button>
+      </div>
+    </div>
+    <p id="libStatus" class="lib-status"></p>
+    <div id="libList" class="lib-list"></div>
+  </div>
+</div>
+
 <div class="layout">
 
   <!-- ============ FORM PANE ============ -->
   <div class="form-pane">
     <h1 class="app-title">Construction Phase H&amp;S Plan</h1>
-    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11f</span></p>
+    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11g</span></p>
 
     <div class="toolbar">
+      <button id="btnLibrary" class="secondary">&larr; Library</button>
+      <button id="btnCloudSave">Save to cloud</button>
       <button id="btnPrint">Save / Print PDF</button>
       <button id="btnPreview" class="secondary">Preview PDF</button>
-      <button id="btnNew" class="secondary">Start new job</button>
+      <button id="btnNew" class="secondary small">Blank form</button>
       <button id="btnExample" class="secondary small">Load example</button>
-      <button id="btnSave" class="secondary small">Backup answers</button>
-      <button id="btnLoad" class="secondary small">Restore answers</button>
+      <button id="btnSave" class="secondary small">Backup file</button>
+      <button id="btnLoad" class="secondary small">Restore file</button>
     </div>
 
     <p class="hint">
@@ -1881,11 +1922,108 @@ fileInput.addEventListener("change",e=>{
 });
 
 /* ============================================================
-   7. INIT
+   7. CLOUD LIBRARY (Cloudflare Worker + D1)
+   ============================================================ */
+const CLOUD_KEY="mostlane_cloud";
+const uid=()=> (window.crypto&&crypto.randomUUID)?crypto.randomUUID():"j"+Date.now()+Math.random().toString(16).slice(2);
+function getCloud(){ try{ return JSON.parse(localStorage.getItem(CLOUD_KEY))||{}; }catch(e){ return {}; } }
+function setCloud(c){ localStorage.setItem(CLOUD_KEY, JSON.stringify(c)); }
+function cloudOn(){ const c=getCloud(); return !!(c.url&&c.token); }
+
+async function cloudReq(method,path,body){
+  const c=getCloud();
+  const r=await fetch(c.url.replace(/\/+$/,"")+path,{
+    method,
+    headers:{ "Authorization":"Bearer "+c.token, ...(body?{"Content-Type":"application/json"}:{}) },
+    body: body?JSON.stringify(body):undefined,
+  });
+  if(!r.ok) throw new Error("HTTP "+r.status+(r.status===401?" — check your access token":""));
+  return r.json().catch(()=>null);
+}
+
+const libEl=()=>document.getElementById("library");
+function showLibrary(){ libEl().classList.add("show"); renderLibrary(); }
+function hideLibrary(){ libEl().classList.remove("show"); }
+
+async function renderLibrary(){
+  const list=document.getElementById("libList"), status=document.getElementById("libStatus");
+  if(!cloudOn()){
+    status.innerHTML='Not connected yet — click <b>Cloud settings</b> and paste your Cloudflare Worker URL and access token.';
+    list.innerHTML='<div class="lib-empty">Once connected, your saved jobs appear here on every device.</div>'; return;
+  }
+  status.textContent="Loading jobs…"; list.innerHTML="";
+  try{
+    const jobs=await cloudReq("GET","/jobs");
+    status.textContent = jobs.length ? (jobs.length+" saved job"+(jobs.length>1?"s":"")) : "";
+    if(!jobs.length){ list.innerHTML='<div class="lib-empty">No saved jobs yet. Click <b>+ New job</b> to create one.</div>'; return; }
+    jobs.forEach(j=>{
+      const d=document.createElement("div"); d.className="job-card";
+      let when=""; try{ when=new Date(j.updated_at).toLocaleString("en-GB"); }catch(e){}
+      d.innerHTML=`<h3>${esc(j.name||"Untitled job")}</h3><div class="meta">Edited ${esc(when)}</div>
+        <div class="row">
+          <button class="small" data-open>Open</button>
+          <button class="small secondary" data-dup>Duplicate</button>
+          <button class="small danger" data-del>Delete</button>
+        </div>`;
+      d.querySelector("[data-open]").onclick=()=>openJob(j.id);
+      d.querySelector("[data-dup]").onclick=()=>duplicateJob(j.id);
+      d.querySelector("[data-del]").onclick=()=>deleteJob(j.id,j.name);
+      list.appendChild(d);
+    });
+  }catch(e){ status.innerHTML='<span style="color:#c0392b">Could not load jobs: '+esc(e.message)+'</span>'; list.innerHTML=""; }
+}
+
+function newJob(){
+  state=exampleState();          // start from the standard template, ready to edit
+  state._id=uid(); persist(); buildForm(); renderDoc(); hideLibrary();
+}
+async function openJob(id){
+  try{
+    const data=await cloudReq("GET","/jobs/"+id);
+    state=data; state._id=id; ensureAux(); persist(); buildForm(); renderDoc(); hideLibrary();
+  }catch(e){ alert("Could not open job: "+e.message); }
+}
+async function duplicateJob(id){
+  try{
+    const data=await cloudReq("GET","/jobs/"+id);
+    data._id=uid(); data.projectName=(data.projectName||"Job")+" (copy)";
+    await cloudReq("PUT","/jobs/"+data._id,data); renderLibrary();
+  }catch(e){ alert("Could not duplicate: "+e.message); }
+}
+async function deleteJob(id,name){
+  if(!confirm('Delete "'+(name||"this job")+'"? This cannot be undone.')) return;
+  try{ await cloudReq("DELETE","/jobs/"+id); renderLibrary(); }
+  catch(e){ alert("Could not delete: "+e.message); }
+}
+function flashCloud(msg){ const b=document.getElementById("btnCloudSave"); const t=b.dataset.t||b.textContent; b.dataset.t=t; b.textContent=msg; setTimeout(()=>b.textContent=t,1500); }
+async function saveCurrent(toast){
+  if(!cloudOn()){ alert("Not connected to the cloud yet. Open the Library and click Cloud settings."); return false; }
+  if(!state._id) state._id=uid();
+  try{ await cloudReq("PUT","/jobs/"+state._id, state); persist(); if(toast) flashCloud("Saved ✓"); return true; }
+  catch(e){ alert("Could not save to cloud: "+e.message); return false; }
+}
+function cloudSettings(){
+  const c=getCloud();
+  const url=prompt("Cloudflare Worker URL\n(e.g. https://mostlane-hs-jobs.<your-subdomain>.workers.dev)", c.url||"");
+  if(url===null) return;
+  const token=prompt("Access token (the APP_TOKEN you set on the Worker)", c.token||"");
+  if(token===null) return;
+  setCloud({ url:(url||"").trim(), token:(token||"").trim() }); renderLibrary();
+}
+
+document.getElementById("libNew").onclick=newJob;
+document.getElementById("libRefresh").onclick=renderLibrary;
+document.getElementById("libCloud").onclick=cloudSettings;
+document.getElementById("btnLibrary").onclick=async()=>{ if(cloudOn()&&state._id) await saveCurrent(false); showLibrary(); };
+document.getElementById("btnCloudSave").onclick=()=>saveCurrent(true);
+
+/* ============================================================
+   8. INIT
    ============================================================ */
 load();
 buildForm();
 renderDoc();
+if(cloudOn()) showLibrary();   // start on the library when connected
 </script>
 </body>
 </html>
