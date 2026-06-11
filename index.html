@@ -144,6 +144,7 @@
 
     <div class="toolbar">
       <button id="btnPrint">Save / Print PDF</button>
+      <button id="btnPreview" class="secondary">Preview PDF</button>
       <button id="btnNew" class="secondary">Start new job</button>
       <button id="btnExample" class="secondary small">Load example</button>
       <button id="btnSave" class="secondary small">Backup answers</button>
@@ -173,6 +174,15 @@
    type: text | textarea | select | issues | directory
    ============================================================ */
 const GROUPS = [
+  { title:"Company branding", open:true, fields:[
+    { id:"_brand", label:"Brand colour", type:"color", def:"#1f4e79",
+      help:"Used for headings, table headers and accents throughout the plan." },
+    { id:"_logo",  label:"Company logo", type:"logo",
+      help:"PNG or JPG. Appears on the cover and at the foot of every page. Stored in this browser and included in your backup file." },
+    { id:"_mapsKey", label:"Google Maps API key (optional)", type:"text",
+      help:"Enables the compound map and the local A&E route map. Create a key in Google Cloud and enable: Maps JavaScript API, Places API, Geocoding API, Directions API and Maps Static API. Restrict the key to your site's web address. Stored only in this browser." },
+  ]},
+
   { title:"1. Project & issue details", open:true, fields:[
     { id:"projectName",  label:"Project / site name", type:"text", def:"Lake Road Surgery" },
     { id:"siteAddress",  label:"Site address", type:"textarea", def:"Lake Road\nVerwood\nBH31 6EH",
@@ -234,11 +244,17 @@ const GROUPS = [
   ]},
 
   { title:"6. Compound location (Appendix C)", open:false, fields:[
+    { id:"includeCompound", label:"Include a compound location section?", type:"select", options:["Yes","No"], def:"Yes",
+      help:"Set to No to leave Appendix C out of the plan entirely." },
     { id:"compoundText", label:"Compound / site set-up notes", type:"textarea",
       def:"Compound Area to include Contractor Parking.\nNo Entry to Main Car Park for Contractors or Deliveries.\nAll Entry for Contractors & Deliveries via Newtown Road.\nBeware of Staff Parking adjacent to compound area." },
+    { id:"compoundMap", label:"Compound location map", type:"compoundmap",
+      help:"Drop / move a pin on the site, then draw a box around the compound area. The map image is added to Appendix C." },
   ]},
 
   { title:"7. Local hospital / A&E (Appendix E)", open:false, fields:[
+    { id:"hospitalFinder",  label:"Suggest nearest A&E", type:"hospitalfinder",
+      help:"Searches for A&E departments near the site address (section 1) and adds a driving-route map to Appendix E." },
     { id:"hospitalName",    label:"Nearest A&E hospital", type:"text", def:"Royal Bournemouth Hospital" },
     { id:"hospitalAddress", label:"Hospital address", type:"textarea", def:"Castle Lane\nBournemouth BH7 7DW" },
   ]},
@@ -263,13 +279,25 @@ const DEFAULT_DIRECTORY = [
 const STORAGE_KEY = "mostlane_cphsp_v1";
 let state = {};
 
+/* Non-question state used by the map features */
+const AUX_DEFAULTS = {
+  siteLatLng:null, compoundPin:null, compoundRect:null,
+  hospitalLatLng:null, hospitalPolyline:"", hospitalRouteText:""
+};
+function ensureAux(){ for(const k in AUX_DEFAULTS) if(!(k in state)) state[k]=AUX_DEFAULTS[k]; }
+
 function blankState(){
   const s={};
   GROUPS.forEach(g=>g.fields.forEach(f=>{
     if(f.type==="issues") s[f.id]=[{no:"1",date:"",desc:"First issue",by:""}];
     else if(f.type==="directory") s[f.id]=[emptyContact()];
+    else if(f.type==="color") s[f.id]=f.def||"#1f4e79";   // keep branding on a new job
+    else if(f.type==="logo") s[f.id]=state[f.id]||"";       // keep logo on a new job
+    else if(f.id==="_mapsKey") s[f.id]=state[f.id]||"";     // keep maps key on a new job
+    else if(f.type==="select") s[f.id]=f.def||"";           // sensible default for toggles
     else s[f.id]="";
   }));
+  Object.assign(s,{...AUX_DEFAULTS});                       // fresh maps state
   return s;
 }
 function exampleState(){
@@ -277,8 +305,10 @@ function exampleState(){
   GROUPS.forEach(g=>g.fields.forEach(f=>{
     if(f.type==="issues") s[f.id]=JSON.parse(JSON.stringify(DEFAULT_ISSUES));
     else if(f.type==="directory") s[f.id]=JSON.parse(JSON.stringify(DEFAULT_DIRECTORY));
+    else if(f.id==="_logo"||f.id==="_mapsKey") s[f.id]=state[f.id]||"";  // keep logo & key
     else s[f.id]=f.def||"";
   }));
+  Object.assign(s,{...AUX_DEFAULTS});
   return s;
 }
 function emptyContact(){return {service:"",name:"",company:"",address:"",phone:"",mobile:"",email:""};}
@@ -286,9 +316,10 @@ function emptyContact(){return {service:"",name:"",company:"",address:"",phone:"
 function load(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
-    if(raw){ state=JSON.parse(raw); return; }
+    if(raw){ state=JSON.parse(raw); ensureAux(); return; }
   }catch(e){}
   state=exampleState();           // first visit shows the worked example
+  ensureAux();
 }
 function persist(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }catch(e){} }
 
@@ -317,8 +348,11 @@ function buildForm(){
 }
 
 function buildField(f){
-  if(f.type==="issues")    return buildIssues(f);
-  if(f.type==="directory") return buildDirectory(f);
+  if(f.type==="issues")        return buildIssues(f);
+  if(f.type==="directory")     return buildDirectory(f);
+  if(f.type==="logo")          return buildLogo(f);
+  if(f.type==="compoundmap")   return buildCompoundMap(f);
+  if(f.type==="hospitalfinder")return buildHospitalFinder(f);
 
   const wrap=document.createElement("label");
   wrap.className="field";
@@ -326,6 +360,8 @@ function buildField(f){
   if(f.help) inner+=`<span class="help">${esc(f.help)}</span>`;
   if(f.type==="textarea"){
     inner+=`<textarea data-id="${f.id}">${esc(v(f.id))}</textarea>`;
+  }else if(f.type==="color"){
+    inner+=`<input type="color" data-id="${f.id}" value="${esc(v(f.id)||"#1f4e79")}" style="width:64px;height:34px;padding:2px;cursor:pointer">`;
   }else if(f.type==="select"){
     inner+=`<select data-id="${f.id}">`+
       f.options.map(o=>`<option ${v(f.id)===o?"selected":""}>${esc(o)}</option>`).join("")+
@@ -335,8 +371,13 @@ function buildField(f){
   }
   wrap.innerHTML=inner;
   wrap.querySelector("[data-id]").addEventListener("input",e=>{
-    state[f.id]=e.target.value; persist(); renderDoc();
+    state[f.id]=e.target.value;
+    if(f.id==="siteAddress") state.siteLatLng=null;   // address changed → re-geocode next time
+    persist(); renderDoc();
   });
+  if(f.id==="_mapsKey"){   // once a key is entered/removed, rebuild so map widgets activate
+    wrap.querySelector("[data-id]").addEventListener("change",()=>buildForm());
+  }
   return wrap;
 }
 
@@ -410,12 +451,274 @@ function buildDirectory(f){
   draw(); return box;
 }
 
+/* ---- company logo upload ---- */
+function buildLogo(f){
+  const box=document.createElement("div");
+  const draw=()=>{
+    box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+
+                  (f.help?`<span class="help">${esc(f.help)}</span>`:"");
+    if(v(f.id)){
+      const img=document.createElement("img");
+      img.src=v(f.id);
+      img.style.cssText="max-width:180px;max-height:80px;display:block;margin:4px 0 6px;border:1px solid var(--line);padding:4px;background:#fff";
+      box.appendChild(img);
+      const rm=document.createElement("button");
+      rm.type="button"; rm.className="small danger"; rm.textContent="Remove logo";
+      rm.addEventListener("click",()=>{ state[f.id]=""; persist(); draw(); renderDoc(); });
+      box.appendChild(rm);
+    }
+    const inp=document.createElement("input");
+    inp.type="file"; inp.accept="image/*"; inp.style.marginTop="6px";
+    inp.addEventListener("change",e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const r=new FileReader();
+      r.onload=()=>{ state[f.id]=r.result; persist(); draw(); renderDoc(); };
+      r.readAsDataURL(file);
+    });
+    box.appendChild(inp);
+  };
+  draw(); return box;
+}
+
+/* ============================================================
+   4b. GOOGLE MAPS (optional — only active when a key is supplied)
+   ============================================================ */
+let _mapsReady=false,_mapsLoading=false,_mapsQueue=[];
+const mapsAvailable = () => !!v("_mapsKey");
+
+function loadMaps(cb){
+  if(_mapsReady){ cb&&cb(); return; }
+  if(!mapsAvailable()){ cb&&cb(new Error("no-key")); return; }
+  _mapsQueue.push(cb);
+  if(_mapsLoading) return;
+  _mapsLoading=true;
+  window.__mostlaneMapsReady=function(){
+    _mapsReady=true; _mapsLoading=false;
+    _mapsQueue.splice(0).forEach(f=>f&&f());
+  };
+  const s=document.createElement("script");
+  s.async=true;
+  s.onerror=()=>{ _mapsLoading=false; _mapsQueue.splice(0).forEach(f=>f&&f(new Error("load-failed")));
+    alert("Could not load Google Maps. Check the API key and that the required APIs are enabled."); };
+  s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(v("_mapsKey"))+
+        "&libraries=places,drawing,geometry&callback=__mostlaneMapsReady&v=quarterly";
+  document.head.appendChild(s);
+}
+
+function geocodeSite(cb){
+  if(state.siteLatLng){ cb(state.siteLatLng); return; }
+  const addr=(v("siteAddress")||"").replace(/\n/g,", ").trim();
+  if(!addr){ cb(null); return; }
+  new google.maps.Geocoder().geocode({address:addr,region:"GB"},(res,status)=>{
+    if(status==="OK"&&res[0]){
+      const l=res[0].geometry.location;
+      state.siteLatLng={lat:l.lat(),lng:l.lng()}; persist(); cb(state.siteLatLng);
+    }else cb(null);
+  });
+}
+
+function computeRoute(from,to,cb){
+  new google.maps.DirectionsService().route(
+    {origin:from,destination:to,travelMode:google.maps.TravelMode.DRIVING},
+    (res,status)=>{
+      if(status==="OK"&&res.routes[0]){
+        const leg=res.routes[0].legs[0];
+        state.hospitalPolyline=google.maps.geometry.encoding.encodePath(res.routes[0].overview_path);
+        state.hospitalRouteText=leg.distance.text+" • approx. "+leg.duration.text+" by road";
+        persist();
+      }else{ state.hospitalPolyline=""; state.hospitalRouteText=""; }
+      cb&&cb();
+    });
+}
+
+/* ---- compound map widget ---- */
+function buildCompoundMap(f){
+  const box=document.createElement("div");
+  box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+
+                (f.help?`<span class="help">${esc(f.help)}</span>`:"");
+  if(!mapsAvailable()){
+    const m=document.createElement("p"); m.className="help";
+    m.textContent='Add your Google Maps API key under "Company branding" to enable this map.';
+    box.appendChild(m); return box;
+  }
+  const tools=document.createElement("div"); tools.style.margin="6px 0";
+  tools.innerHTML=`<button type="button" class="small secondary" data-act="pin">Drop / move pin</button>
+    <button type="button" class="small secondary" data-act="rect">Draw compound box</button>
+    <button type="button" class="small danger" data-act="clear">Clear map</button>`;
+  box.appendChild(tools);
+  const mapDiv=document.createElement("div");
+  mapDiv.style.cssText="height:300px;border:1px solid var(--line);border-radius:6px";
+  box.appendChild(mapDiv);
+
+  loadMaps(err=>{
+    if(err) return;
+    geocodeSite(site=>{
+      const brand=v("_brand")||"#1f4e79";
+      const center=state.compoundPin||site||{lat:50.8806,lng:-1.8757};
+      const map=new google.maps.Map(mapDiv,{center,zoom:18,mapTypeId:"satellite",tilt:0});
+      let marker=null,rectangle=null,pinMode=false;
+
+      function setMarker(pos){
+        const p={lat:pos.lat,lng:pos.lng};
+        if(marker) marker.setPosition(p);
+        else{
+          marker=new google.maps.Marker({position:p,map,draggable:true});
+          marker.addListener("dragend",e=>{
+            state.compoundPin={lat:e.latLng.lat(),lng:e.latLng.lng()}; persist(); renderDoc();
+          });
+        }
+        state.compoundPin=p; persist(); renderDoc();
+      }
+      function attachRect(rect){
+        rectangle=rect;
+        const save=()=>{
+          const b=rectangle.getBounds(),ne=b.getNorthEast(),sw=b.getSouthWest();
+          state.compoundRect=[
+            {lat:ne.lat(),lng:sw.lng()},{lat:ne.lat(),lng:ne.lng()},
+            {lat:sw.lat(),lng:ne.lng()},{lat:sw.lat(),lng:sw.lng()}
+          ]; persist(); renderDoc();
+        };
+        rectangle.addListener("bounds_changed",save); save();
+      }
+
+      if(state.compoundPin) setMarker(state.compoundPin);
+      if(state.compoundRect){
+        const r=state.compoundRect, lats=r.map(p=>p.lat), lngs=r.map(p=>p.lng);
+        attachRect(new google.maps.Rectangle({
+          bounds:{north:Math.max(...lats),south:Math.min(...lats),east:Math.max(...lngs),west:Math.min(...lngs)},
+          map,editable:true,draggable:true,
+          fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2}));
+      }
+
+      const dm=new google.maps.drawing.DrawingManager({
+        drawingControl:false,
+        rectangleOptions:{fillColor:brand,fillOpacity:.25,strokeColor:brand,strokeWeight:2,editable:true,draggable:true}});
+      dm.setMap(map);
+      dm.addListener("rectanglecomplete",rect=>{
+        if(rectangle) rectangle.setMap(null);
+        dm.setDrawingMode(null); attachRect(rect);
+      });
+      map.addListener("click",e=>{ if(pinMode) setMarker({lat:e.latLng.lat(),lng:e.latLng.lng()}); });
+
+      tools.querySelector('[data-act="pin"]').onclick =()=>{ pinMode=true;  dm.setDrawingMode(null); };
+      tools.querySelector('[data-act="rect"]').onclick=()=>{ pinMode=false; dm.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE); };
+      tools.querySelector('[data-act="clear"]').onclick=()=>{
+        if(marker){marker.setMap(null);marker=null;}
+        if(rectangle){rectangle.setMap(null);rectangle=null;}
+        state.compoundPin=null; state.compoundRect=null; persist(); renderDoc();
+      };
+    });
+  });
+  return box;
+}
+
+/* ---- nearest A&E finder ---- */
+function buildHospitalFinder(f){
+  const box=document.createElement("div");
+  box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`+
+                (f.help?`<span class="help">${esc(f.help)}</span>`:"");
+  if(!mapsAvailable()){
+    const m=document.createElement("p"); m.className="help";
+    m.textContent='Add your Google Maps API key under "Company branding" to enable A&E suggestions.';
+    box.appendChild(m); return box;
+  }
+  const btn=document.createElement("button");
+  btn.type="button"; btn.className="small"; btn.textContent="Suggest local A&E";
+  box.appendChild(btn);
+  const results=document.createElement("div"); results.style.marginTop="8px"; box.appendChild(results);
+
+  btn.addEventListener("click",()=>{
+    results.innerHTML='<p class="help">Searching…</p>';
+    loadMaps(err=>{
+      if(err){ results.innerHTML=""; return; }
+      geocodeSite(site=>{
+        if(!site){ results.innerHTML='<p class="help">Could not locate the site address — check section 1.</p>'; return; }
+        const svc=new google.maps.places.PlacesService(document.createElement("div"));
+        svc.textSearch({
+          query:"A&E accident and emergency hospital",
+          location:new google.maps.LatLng(site.lat,site.lng), radius:32000
+        },(res,status)=>{
+          if(status!==google.maps.places.PlacesServiceStatus.OK||!res||!res.length){
+            results.innerHTML='<p class="help">No A&E departments found nearby.</p>'; return;
+          }
+          results.innerHTML="";
+          res.slice(0,5).forEach(p=>{
+            const row=document.createElement("div"); row.className="repeat-row";
+            row.innerHTML=`<b>${esc(p.name)}</b><br><span class="help">${esc(p.formatted_address||"")}</span><br>`;
+            const pick=document.createElement("button");
+            pick.type="button"; pick.className="small secondary"; pick.textContent="Use this hospital";
+            pick.addEventListener("click",()=>{
+              state.hospitalName=p.name;
+              state.hospitalAddress=(p.formatted_address||"").replace(/,\s*/g,"\n");
+              state.hospitalLatLng={lat:p.geometry.location.lat(),lng:p.geometry.location.lng()};
+              const ni=document.querySelector('[data-id="hospitalName"]');    if(ni) ni.value=state.hospitalName;
+              const ai=document.querySelector('[data-id="hospitalAddress"]'); if(ai) ai.value=state.hospitalAddress;
+              persist();
+              results.innerHTML='<p class="help">Building route map…</p>';
+              computeRoute(site,state.hospitalLatLng,()=>{
+                results.innerHTML='<p class="help">Added '+esc(state.hospitalName)+' to Appendix E.</p>';
+                renderDoc();
+              });
+            });
+            row.appendChild(pick); results.appendChild(row);
+          });
+        });
+      });
+    });
+  });
+  return box;
+}
+
+/* ---- static map image URLs for the printed document ---- */
+function brandHex(){ return "0x"+(v("_brand")||"#1f4e79").replace("#",""); }
+
+function staticCompoundUrl(){
+  if(!mapsAvailable()) return "";
+  const pin=state.compoundPin, rect=state.compoundRect;
+  if(!pin && !rect) return "";
+  const bc=brandHex();
+  const p=["size=640x360","scale=2","maptype=satellite","key="+encodeURIComponent(v("_mapsKey"))];
+  if(pin) p.push("markers=color:red%7C"+pin.lat+","+pin.lng);
+  if(rect){
+    const pts=rect.concat([rect[0]]).map(c=>c.lat+","+c.lng).join("%7C");
+    p.push("path=color:"+bc+"ff%7Cweight:2%7Cfillcolor:"+bc+"55%7C"+pts);
+  }else if(pin){ p.push("zoom=18"); }
+  return "https://maps.googleapis.com/maps/api/staticmap?"+p.join("&");
+}
+
+function staticRouteUrl(){
+  if(!mapsAvailable()||!state.hospitalPolyline||!state.siteLatLng||!state.hospitalLatLng) return "";
+  const bc=brandHex();
+  const p=["size=640x380","scale=2","key="+encodeURIComponent(v("_mapsKey"))];
+  p.push("markers=color:green%7Clabel:S%7C"+state.siteLatLng.lat+","+state.siteLatLng.lng);
+  p.push("markers=color:red%7Clabel:H%7C"+state.hospitalLatLng.lat+","+state.hospitalLatLng.lng);
+  p.push("path=weight:4%7Ccolor:"+bc+"ff%7Cenc:"+encodeURIComponent(state.hospitalPolyline));
+  return "https://maps.googleapis.com/maps/api/staticmap?"+p.join("&");
+}
+
 /* ============================================================
    5. RENDER DOCUMENT
    Constant legal text is reproduced verbatim from the master
    plan; ${...} bindings are the per-job answers.
    ============================================================ */
-const FOOT = `<p class="footer-note">Mostlane Construction LTD &mdash; Construction Phase Health and Safety Plan (Rev 01)</p>`;
+let FOOT = "";   // rebuilt on each render so it can include the logo
+
+function applyBranding(){
+  const c = v("_brand") || "#1f4e79";
+  document.documentElement.style.setProperty("--brand", c);
+  document.documentElement.style.setProperty("--brand-light", c + "1f"); // light tint
+}
+function logoImg(maxH){
+  return v("_logo")
+    ? `<img src="${v("_logo")}" alt="company logo" style="max-height:${maxH}px;max-width:260px">`
+    : "";
+}
+function buildFoot(){
+  const logo = v("_logo")
+    ? `<img src="${v("_logo")}" alt="" style="max-height:24px;vertical-align:middle;margin-right:8px">`
+    : "";
+  FOOT = `<div class="footer-note">${logo}Mostlane Construction LTD &mdash; Construction Phase Health and Safety Plan (Rev 01)</div>`;
+}
 
 function issuesRows(){
   return (state.issues||[]).map(r=>`<tr>
@@ -433,6 +736,8 @@ function asbestosLine(){
 }
 
 function renderDoc(){
+  applyBranding();
+  buildFoot();
   const root=document.getElementById("docRoot");
   root.innerHTML = [
     pageCover(),
@@ -447,6 +752,7 @@ function renderDoc(){
 
 function pageCover(){
   return `<div class="page">
+    ${ v("_logo") ? `<div style="text-align:center;margin-bottom:14px">${logoImg(90)}</div>` : "" }
     <h1>Construction Phase Health &amp; Safety Plan</h1>
     <div class="company-block">
       <b>Mostlane Office:</b><br>
@@ -593,10 +899,16 @@ function pageAppendixB(){
 }
 
 function pageAppendixCDE(){
+  const showCompound = v("includeCompound")!=="No";
+  const compoundImg  = staticCompoundUrl();
+  const routeImg     = staticRouteUrl();
   return `<div class="page">
+    ${ showCompound ? `
     <p class="appendix-tab">C</p>
     <h2>Appendix C &mdash; Site Compound Location &amp; Set-up</h2>
     <p>${nl(v("compoundText"))}</p>
+    ${ compoundImg ? `<img src="${compoundImg}" alt="Compound location map" style="max-width:100%;border:1px solid #888;margin:6px 0">` : "" }
+    ` : "" }
 
     <p class="appendix-tab">D</p>
     <h2>Appendix D &mdash; Contact Details</h2>
@@ -610,6 +922,8 @@ function pageAppendixCDE(){
     <p class="appendix-tab">E</p>
     <h2>Appendix E &mdash; Local Hospital &amp; A&amp;E Department</h2>
     <p><b>${esc(v("hospitalName"))}</b><br>${nl(v("hospitalAddress"))}</p>
+    ${ state.hospitalRouteText ? `<p><b>Driving route from site:</b> ${esc(state.hospitalRouteText)}</p>` : "" }
+    ${ routeImg ? `<img src="${routeImg}" alt="Route from site to hospital" style="max-width:100%;border:1px solid #888;margin:6px 0">` : "" }
 
     <h2>Appendix F &mdash; Mostlane Health &amp; Safety Policy</h2>
     <p>(Sent as a separate email attachment as a protected file.)</p>
@@ -621,6 +935,31 @@ function pageAppendixCDE(){
    6. TOOLBAR ACTIONS
    ============================================================ */
 document.getElementById("btnPrint").addEventListener("click",()=>window.print());
+
+document.getElementById("btnPreview").addEventListener("click",()=>{
+  const css   = document.querySelector("style").innerHTML;
+  const brand = v("_brand") || "#1f4e79";
+  const win   = window.open("", "_blank");
+  if(!win){ alert("Please allow pop-ups for this page to open the preview."); return; }
+  win.document.write(`<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8">
+    <title>${esc(v("projectName")||"H&S Plan")} — Preview</title>
+    <style>${css}</style>
+    <style>
+      :root{--brand:${brand};--brand-light:${brand}1f}
+      body{background:#e9edf2;margin:0;padding:18px}
+      .pv-bar{position:sticky;top:-18px;z-index:10;display:flex;gap:8px;justify-content:center;
+        padding:12px;margin:-18px -18px 18px;background:#fff;border-bottom:1px solid var(--line)}
+      @media print{.pv-bar{display:none}body{background:#fff;padding:0}}
+    </style></head>
+    <body>
+      <div class="pv-bar">
+        <button onclick="window.print()">Save / Print as PDF</button>
+        <button class="secondary" onclick="window.close()">Close preview</button>
+      </div>
+      <div class="doc">${document.getElementById("docRoot").innerHTML}</div>
+    </body></html>`);
+  win.document.close();
+});
 
 document.getElementById("btnNew").addEventListener("click",()=>{
   if(confirm("Start a new job? This clears all answers in this browser.")){
@@ -644,7 +983,7 @@ document.getElementById("btnLoad").addEventListener("click",()=>fileInput.click(
 fileInput.addEventListener("change",e=>{
   const file=e.target.files[0]; if(!file) return;
   const r=new FileReader();
-  r.onload=()=>{ try{ state=JSON.parse(r.result); persist(); buildForm(); renderDoc(); }
+  r.onload=()=>{ try{ state=JSON.parse(r.result); ensureAux(); persist(); buildForm(); renderDoc(); }
                  catch(err){ alert("Could not read that file."); } };
   r.readAsText(file); fileInput.value="";
 });
