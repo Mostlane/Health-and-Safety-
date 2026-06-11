@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mostlane &mdash; Construction Phase H&amp;S Plan Builder</title>
+<style>
+  :root{
+    --brand:#1f4e79;
+    --brand-light:#eaf1f8;
+    --line:#ccd6e0;
+    --ink:#222;
+    --muted:#666;
+    --paper:#fff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    color:var(--ink);
+    background:#f4f6f9;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* ---------- Layout (screen) ---------- */
+  .layout{display:flex;min-height:100vh}
+  .form-pane{
+    width:430px;
+    flex:0 0 430px;
+    background:var(--paper);
+    border-right:1px solid var(--line);
+    padding:18px 20px 80px;
+    overflow-y:auto;
+    height:100vh;
+    position:sticky;
+    top:0;
+  }
+  .doc-pane{
+    flex:1;
+    padding:28px;
+    overflow-y:auto;
+    height:100vh;
+  }
+
+  .app-title{font-size:18px;color:var(--brand);margin:0 0 2px}
+  .app-sub{font-size:12px;color:var(--muted);margin:0 0 16px}
+
+  .toolbar{
+    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;
+    position:sticky;top:-18px;background:var(--paper);padding:10px 0;z-index:5;
+    border-bottom:1px solid var(--line);
+  }
+  button{
+    font:inherit;cursor:pointer;border:1px solid var(--brand);
+    background:var(--brand);color:#fff;border-radius:6px;padding:9px 14px;
+  }
+  button.secondary{background:#fff;color:var(--brand)}
+  button.small{padding:4px 9px;font-size:12px}
+  button.danger{border-color:#a33;color:#a33;background:#fff}
+  button:hover{filter:brightness(.96)}
+
+  details.group{
+    border:1px solid var(--line);border-radius:8px;margin-bottom:12px;
+    background:#fbfcfe;overflow:hidden;
+  }
+  details.group>summary{
+    cursor:pointer;padding:11px 14px;font-weight:bold;color:var(--brand);
+    background:var(--brand-light);list-style:none;user-select:none;
+  }
+  details.group>summary::-webkit-details-marker{display:none}
+  details.group>summary::before{content:"\25B8  ";color:var(--brand)}
+  details.group[open]>summary::before{content:"\25BE  "}
+  .group-body{padding:12px 14px}
+
+  label.field{display:block;margin-bottom:11px;font-size:13px}
+  label.field>span.lbl{display:block;font-weight:bold;margin-bottom:3px}
+  label.field>span.help{display:block;font-weight:normal;color:var(--muted);font-size:11px;margin-bottom:4px}
+  input[type=text], textarea, select{
+    width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:5px;
+    font:inherit;background:#fff;
+  }
+  textarea{min-height:64px;resize:vertical;line-height:1.4}
+
+  .repeat-row{
+    border:1px dashed var(--line);border-radius:6px;padding:10px;margin-bottom:10px;
+    background:#fff;position:relative;
+  }
+  .repeat-row .row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .repeat-row .row-head b{font-size:12px;color:var(--muted)}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  .hint{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+
+  /* ---------- Document (the printable plan) ---------- */
+  .doc-pane{background:#e9edf2}
+  .page{
+    background:var(--paper);
+    width:210mm;
+    max-width:100%;
+    min-height:auto;
+    margin:0 auto 18px;
+    padding:22mm 20mm;
+    box-shadow:0 1px 6px rgba(0,0,0,.18);
+    font-size:12px;
+    line-height:1.5;
+  }
+  .doc h1{font-size:18px;text-align:center;color:#000;letter-spacing:.5px;margin:0 0 18px}
+  .doc h2{font-size:15px;color:#000;border-bottom:2px solid #000;padding-bottom:3px;margin:22px 0 10px}
+  .doc h3{font-size:13px;color:#000;margin:16px 0 6px;text-transform:uppercase}
+  .doc h4{font-size:12px;color:#000;margin:12px 0 4px;text-transform:uppercase}
+  .doc p{margin:0 0 9px;text-align:justify}
+  .doc ul{margin:0 0 9px;padding-left:20px}
+  .doc table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:11px}
+  .doc th,.doc td{border:1px solid #888;padding:5px 7px;text-align:left;vertical-align:top}
+  .doc th{background:var(--brand-light)}
+  .doc .company-block{font-size:11px;line-height:1.4}
+  .doc .footer-note{font-size:10px;color:#555;border-top:1px solid #ccc;margin-top:24px;padding-top:6px;text-align:center}
+  .doc .appendix-tab{font-size:40px;font-weight:bold;color:var(--brand);text-align:right;margin:0}
+  .doc .val{} /* substituted values inherit styling */
+  .doc .danger-tag{display:inline-block;background:#fde9e9;border:1px solid #c0392b;color:#922;padding:2px 8px;border-radius:4px;font-weight:bold}
+  .risk-high{background:#f5c6c6}.risk-med{background:#fde9b8}.risk-low{background:#cdeacd}
+
+  /* ---------- Print ---------- */
+  @media print{
+    body{background:#fff}
+    .form-pane,.toolbar,.no-print{display:none !important}
+    .layout{display:block}
+    .doc-pane{height:auto;overflow:visible;padding:0;background:#fff}
+    .page{
+      box-shadow:none;margin:0;width:auto;padding:14mm 14mm;
+      page-break-after:always;
+    }
+    .page:last-child{page-break-after:auto}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ============ FORM PANE ============ -->
+  <div class="form-pane">
+    <h1 class="app-title">Construction Phase H&amp;S Plan</h1>
+    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire</p>
+
+    <div class="toolbar">
+      <button id="btnPrint">Save / Print PDF</button>
+      <button id="btnNew" class="secondary">Start new job</button>
+      <button id="btnExample" class="secondary small">Load example</button>
+      <button id="btnSave" class="secondary small">Backup answers</button>
+      <button id="btnLoad" class="secondary small">Restore answers</button>
+    </div>
+
+    <p class="hint">
+      Fill in the fields below &mdash; the document on the right updates as you type.
+      When it looks right, click <b>Save / Print PDF</b> and choose
+      &ldquo;Save as PDF&rdquo;. Your answers are kept in this browser automatically.
+    </p>
+
+    <div id="formRoot"></div>
+    <input type="file" id="fileInput" accept="application/json" class="no-print" style="display:none">
+  </div>
+
+  <!-- ============ DOCUMENT PANE ============ -->
+  <div class="doc-pane">
+    <div id="docRoot" class="doc"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1. FIELD CONFIGURATION
+   Edit this list to add / remove / rename questions.
+   type: text | textarea | select | issues | directory
+   ============================================================ */
+const GROUPS = [
+  { title:"1. Project & issue details", open:true, fields:[
+    { id:"projectName",  label:"Project / site name", type:"text", def:"Lake Road Surgery" },
+    { id:"siteAddress",  label:"Site address", type:"textarea", def:"Lake Road\nVerwood\nBH31 6EH",
+      help:"One line per row." },
+    { id:"projectNo",    label:"Project number", type:"text", def:"45105" },
+    { id:"projectRef",   label:"Project reference", type:"text", def:"MOS0552/00012" },
+    { id:"scheme",       label:"Scheme description", type:"text",
+      def:"Demolition, extension & refurbishment of existing Building" },
+    { id:"duration",     label:"Project duration", type:"text", def:"16 Weeks" },
+    { id:"workingHours", label:"Working hours", type:"text", def:"08:00 – 16:30 Mon – Fri" },
+    { id:"asbestos",     label:"Asbestos likely (build date)?", type:"select", options:["Yes","No"], def:"Yes" },
+    { id:"issues",       label:"Issue / revision history", type:"issues" },
+  ]},
+
+  { title:"2. Mostlane project team", open:false, fields:[
+    { id:"officeTel",          label:"Office telephone", type:"text", def:"02380 262 000" },
+    { id:"projectDirector",    label:"Project Director", type:"text", def:"Joe Line" },
+    { id:"projectDirectorMob", label:"Project Director mobile", type:"text", def:"07774 252851" },
+    { id:"contractsManager",   label:"Contracts Manager(s)", type:"text", def:"Joe Line / Jamie Line" },
+    { id:"contractsManagerTel",label:"Contracts Manager phone", type:"text", def:"07771 357346" },
+    { id:"siteManager",        label:"Site Manager", type:"text", def:"Chris Freeman" },
+    { id:"siteManagerTel",     label:"Site Manager phone", type:"text", def:"07770 572991" },
+  ]},
+
+  { title:"3. Site-specific arrangements", open:false, fields:[
+    { id:"welfare", label:"Welfare facilities & first aid (site set-up)", type:"textarea",
+      def:"Welfare facilities including toilet, hot and cold running water and a sink will be provided on site by the client in the form of the area in the bungalow on the site that has been set aside for the use of Mostlane Construction Ltd employees and sub-contractors for the duration of the project. A portaloo will be supplied when services have to be removed during the refurbishment." },
+    { id:"accessEgress", label:"Access & egress (incl. deliveries)", type:"textarea",
+      def:"Access is restricted to working area only. Access to site is only via staff entrance and no vans or deliveries should use the main surgery car park or entrance. Deliveries will be carried out by Mostlane Construction Ltd direct to site operatives." },
+    { id:"stability", label:"Stability of existing structure", type:"textarea", def:"N/A" },
+    { id:"fallPrevention", label:"Fall prevention (scaffold / access notes)", type:"textarea",
+      def:"For this project it is anticipated that a Stairwell Tower Scaffold may be used. This will be assembled by the site supervisor who is PASMA trained and he will also record inspections for each time the Stairwell tower scaffold is erected." },
+    { id:"lifting", label:"Lifting operations", type:"textarea",
+      def:"It is not anticipated that there will be any lifting operations carried out on this project." },
+    { id:"traffic", label:"Traffic routes & segregation", type:"textarea",
+      def:"Care to be taken that this is a busy car park used by the public all day." },
+    { id:"storage", label:"Storage of materials & compound", type:"textarea",
+      def:"A compound area will be agreed in designated car park spaces in the car park area and will be made up with locked Heras fencing." },
+  ]},
+
+  { title:"4. Project directory (Appendix A & D)", open:false, fields:[
+    { id:"directory", label:"Project directory contacts", type:"directory" },
+  ]},
+
+  { title:"5. Risk assessment summary (Appendix B)", open:false, fields:[
+    { id:"ramsTitle",     label:"RAMS title", type:"text", def:"Lake Road Surgery - Internal Alterations" },
+    { id:"ramsDanger",    label:"Overall risk level", type:"select", options:["Low Risk Activity","Medium Risk Activity","High Risk Activity"], def:"Medium Risk Activity" },
+    { id:"ramsLocation",  label:"Location of activity", type:"text", def:"Lake Road Surgery, Verwood, BH31 6EH" },
+    { id:"ramsDesc",      label:"Description of activity", type:"text", def:"Demolition, extension and internal refurbishment" },
+    { id:"ramsEquipment", label:"Equipment used", type:"textarea", def:"General Building Tools, Cordless drills, Excavators, Breakers & General Groundworking Tools" },
+    { id:"ramsSupporting",label:"Supporting documents", type:"text", def:"Risk Assessments & COSHH" },
+    { id:"ramsPersons",   label:"Persons affected", type:"text", def:"Management, Supervisor, Operative, Client, Apprentice" },
+    { id:"ramsNumbers",   label:"Total numbers affected", type:"text", def:"Less than 5 on site at any one time" },
+    { id:"ramsFrequency", label:"Frequency of exposure", type:"text", def:"Most items most days" },
+    { id:"ramsExposure",  label:"Duration of exposure", type:"text", def:"10 week contract" },
+    { id:"ramsAssessor",  label:"Assessor", type:"text", def:"Joe Line" },
+    { id:"ramsCreated",   label:"Created on", type:"text", def:"22/02/2026" },
+    { id:"ramsReview",    label:"Review before", type:"text", def:"22/02/2028" },
+  ]},
+
+  { title:"6. Compound location (Appendix C)", open:false, fields:[
+    { id:"compoundText", label:"Compound / site set-up notes", type:"textarea",
+      def:"Compound Area to include Contractor Parking.\nNo Entry to Main Car Park for Contractors or Deliveries.\nAll Entry for Contractors & Deliveries via Newtown Road.\nBeware of Staff Parking adjacent to compound area." },
+  ]},
+
+  { title:"7. Local hospital / A&E (Appendix E)", open:false, fields:[
+    { id:"hospitalName",    label:"Nearest A&E hospital", type:"text", def:"Royal Bournemouth Hospital" },
+    { id:"hospitalAddress", label:"Hospital address", type:"textarea", def:"Castle Lane\nBournemouth BH7 7DW" },
+  ]},
+];
+
+/* Default contents for the repeatable lists */
+const DEFAULT_ISSUES = [
+  { no:"1", date:"22/02/26", desc:"First issue", by:"Joe Line" },
+  { no:"2", date:"13/05/26", desc:"Revised Start Dates - Second Issue", by:"Joe Line" },
+];
+const DEFAULT_DIRECTORY = [
+  { service:"Client", name:"Jo Morris (Managing Partner) / Annie Morris (Operations Manager)", company:"The Cranborne Practice", address:"Lake Road Surgery, Lake Road, Verwood BH31 6EH", phone:"01202 822825", mobile:"07825 001787", email:"jo.morris@dorsetgp.nhs.uk" },
+  { service:"Architect", name:"Rhiannon North / Gareth Jenkins", company:"Studio Four Architects", address:"Tollgate Estates, Stanbridge Earls, Romsey SO51 0HE", phone:"01794 511255", mobile:"", email:"r.north@s4architects.co.uk" },
+  { service:"Structural Engineer", name:"Phil Fenna", company:"R Elliott Associates", address:"Dennett House, Brighton Road, Sway SO41 6EB", phone:"01590 683176", mobile:"", email:"p.fenna@rea-ltd.co.uk" },
+  { service:"CDM PD / Project Manager", name:"Joe Line (MD)", company:"Mostlane Construction Ltd", address:"Unit A5, Segensworth Business Centre, PO15 5RQ", phone:"023 8026 2000", mobile:"07774 252851", email:"joe@mostlane.com" },
+  { service:"Site Manager", name:"Chris Freeman", company:"Mostlane Construction Ltd", address:"Unit A5, Segensworth Business Centre, PO15 5RQ", phone:"", mobile:"07770 572991", email:"" },
+];
+
+/* ============================================================
+   2. STATE
+   ============================================================ */
+const STORAGE_KEY = "mostlane_cphsp_v1";
+let state = {};
+
+function blankState(){
+  const s={};
+  GROUPS.forEach(g=>g.fields.forEach(f=>{
+    if(f.type==="issues") s[f.id]=[{no:"1",date:"",desc:"First issue",by:""}];
+    else if(f.type==="directory") s[f.id]=[emptyContact()];
+    else s[f.id]="";
+  }));
+  return s;
+}
+function exampleState(){
+  const s={};
+  GROUPS.forEach(g=>g.fields.forEach(f=>{
+    if(f.type==="issues") s[f.id]=JSON.parse(JSON.stringify(DEFAULT_ISSUES));
+    else if(f.type==="directory") s[f.id]=JSON.parse(JSON.stringify(DEFAULT_DIRECTORY));
+    else s[f.id]=f.def||"";
+  }));
+  return s;
+}
+function emptyContact(){return {service:"",name:"",company:"",address:"",phone:"",mobile:"",email:""};}
+
+function load(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){ state=JSON.parse(raw); return; }
+  }catch(e){}
+  state=exampleState();           // first visit shows the worked example
+}
+function persist(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }catch(e){} }
+
+/* ============================================================
+   3. HELPERS
+   ============================================================ */
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const nl  = s => esc(s).replace(/\n/g,"<br>");
+const v   = id => state[id]||"";
+
+/* ============================================================
+   4. BUILD FORM
+   ============================================================ */
+const formRoot=document.getElementById("formRoot");
+
+function buildForm(){
+  formRoot.innerHTML="";
+  GROUPS.forEach(group=>{
+    const det=document.createElement("details");
+    det.className="group"; det.open=!!group.open;
+    det.innerHTML=`<summary>${esc(group.title)}</summary><div class="group-body"></div>`;
+    const body=det.querySelector(".group-body");
+    group.fields.forEach(f=>body.appendChild(buildField(f)));
+    formRoot.appendChild(det);
+  });
+}
+
+function buildField(f){
+  if(f.type==="issues")    return buildIssues(f);
+  if(f.type==="directory") return buildDirectory(f);
+
+  const wrap=document.createElement("label");
+  wrap.className="field";
+  let inner=`<span class="lbl">${esc(f.label)}</span>`;
+  if(f.help) inner+=`<span class="help">${esc(f.help)}</span>`;
+  if(f.type==="textarea"){
+    inner+=`<textarea data-id="${f.id}">${esc(v(f.id))}</textarea>`;
+  }else if(f.type==="select"){
+    inner+=`<select data-id="${f.id}">`+
+      f.options.map(o=>`<option ${v(f.id)===o?"selected":""}>${esc(o)}</option>`).join("")+
+      `</select>`;
+  }else{
+    inner+=`<input type="text" data-id="${f.id}" value="${esc(v(f.id))}">`;
+  }
+  wrap.innerHTML=inner;
+  wrap.querySelector("[data-id]").addEventListener("input",e=>{
+    state[f.id]=e.target.value; persist(); renderDoc();
+  });
+  return wrap;
+}
+
+/* ---- repeatable: issues ---- */
+function buildIssues(f){
+  const box=document.createElement("div");
+  const draw=()=>{
+    box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`;
+    (state[f.id]||[]).forEach((row,i)=>{
+      const div=document.createElement("div"); div.className="repeat-row";
+      div.innerHTML=`
+        <div class="row-head"><b>Issue ${i+1}</b>
+          <button type="button" class="small danger" data-del="${i}">Remove</button></div>
+        <div class="two-col">
+          <label class="field"><span class="lbl">Issue no.</span><input type="text" data-k="no" value="${esc(row.no)}"></label>
+          <label class="field"><span class="lbl">Date</span><input type="text" data-k="date" value="${esc(row.date)}"></label>
+        </div>
+        <label class="field"><span class="lbl">Description of revision</span><input type="text" data-k="desc" value="${esc(row.desc)}"></label>
+        <label class="field"><span class="lbl">Reviewed by</span><input type="text" data-k="by" value="${esc(row.by)}"></label>`;
+      div.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener("input",e=>{
+        state[f.id][i][e.target.dataset.k]=e.target.value; persist(); renderDoc();
+      }));
+      div.querySelector("[data-del]").addEventListener("click",()=>{
+        state[f.id].splice(i,1); persist(); draw(); renderDoc();
+      });
+      box.appendChild(div);
+    });
+    const add=document.createElement("button");
+    add.type="button"; add.className="secondary small"; add.textContent="+ Add issue";
+    add.addEventListener("click",()=>{
+      state[f.id].push({no:String((state[f.id].length||0)+1),date:"",desc:"",by:""});
+      persist(); draw(); renderDoc();
+    });
+    box.appendChild(add);
+  };
+  draw(); return box;
+}
+
+/* ---- repeatable: directory ---- */
+function buildDirectory(f){
+  const box=document.createElement("div");
+  const draw=()=>{
+    box.innerHTML=`<span class="lbl" style="font-size:13px">${esc(f.label)}</span>`;
+    (state[f.id]||[]).forEach((row,i)=>{
+      const div=document.createElement("div"); div.className="repeat-row";
+      div.innerHTML=`
+        <div class="row-head"><b>Contact ${i+1}</b>
+          <button type="button" class="small danger" data-del="${i}">Remove</button></div>
+        <label class="field"><span class="lbl">Role / service</span><input type="text" data-k="service" value="${esc(row.service)}"></label>
+        <label class="field"><span class="lbl">Name(s)</span><input type="text" data-k="name" value="${esc(row.name)}"></label>
+        <label class="field"><span class="lbl">Company</span><input type="text" data-k="company" value="${esc(row.company)}"></label>
+        <label class="field"><span class="lbl">Address</span><input type="text" data-k="address" value="${esc(row.address)}"></label>
+        <div class="two-col">
+          <label class="field"><span class="lbl">Telephone</span><input type="text" data-k="phone" value="${esc(row.phone)}"></label>
+          <label class="field"><span class="lbl">Mobile</span><input type="text" data-k="mobile" value="${esc(row.mobile)}"></label>
+        </div>
+        <label class="field"><span class="lbl">Email</span><input type="text" data-k="email" value="${esc(row.email)}"></label>`;
+      div.querySelectorAll("[data-k]").forEach(inp=>inp.addEventListener("input",e=>{
+        state[f.id][i][e.target.dataset.k]=e.target.value; persist(); renderDoc();
+      }));
+      div.querySelector("[data-del]").addEventListener("click",()=>{
+        state[f.id].splice(i,1); persist(); draw(); renderDoc();
+      });
+      box.appendChild(div);
+    });
+    const add=document.createElement("button");
+    add.type="button"; add.className="secondary small"; add.textContent="+ Add contact";
+    add.addEventListener("click",()=>{ state[f.id].push(emptyContact()); persist(); draw(); renderDoc(); });
+    box.appendChild(add);
+  };
+  draw(); return box;
+}
+
+/* ============================================================
+   5. RENDER DOCUMENT
+   Constant legal text is reproduced verbatim from the master
+   plan; ${...} bindings are the per-job answers.
+   ============================================================ */
+const FOOT = `<p class="footer-note">Mostlane Construction LTD &mdash; Construction Phase Health and Safety Plan (Rev 01)</p>`;
+
+function issuesRows(){
+  return (state.issues||[]).map(r=>`<tr>
+    <td>${esc(r.no)}</td><td>${esc(r.date)}</td><td>${esc(r.desc)}</td><td>${esc(r.by)}</td></tr>`).join("");
+}
+function directoryRows(){
+  return (state.directory||[]).map(r=>`<tr>
+    <td>${esc(r.service)}</td><td>${esc(r.name)}</td><td>${esc(r.company)}</td>
+    <td>${nl(r.address)}</td><td>${esc(r.phone)}</td><td>${esc(r.mobile)}</td><td>${esc(r.email)}</td></tr>`).join("");
+}
+function asbestosLine(){
+  return v("asbestos")==="No"
+    ? "Asbestos containing materials are not anticipated on this project; however an asbestos register / refurbishment survey must be reviewed before works commence."
+    : "The presence of asbestos containing materials is likely given the build date.";
+}
+
+function renderDoc(){
+  const root=document.getElementById("docRoot");
+  root.innerHTML = [
+    pageCover(),
+    pageDescription(),
+    pageWelfare(),
+    pageSafetyRisks(),
+    pageAppendixA(),
+    pageAppendixB(),
+    pageAppendixCDE(),
+  ].join("");
+}
+
+function pageCover(){
+  return `<div class="page">
+    <h1>Construction Phase Health &amp; Safety Plan</h1>
+    <div class="company-block">
+      <b>Mostlane Office:</b><br>
+      Mostlane, Unit A5, Segensworth Business Centre, PO15 5RQ<br>
+      Tel: ${esc(v("officeTel"))}
+    </div>
+    <h2>Issue Status</h2>
+    <p><b>Site Address</b><br><span class="val">${nl(v("siteAddress"))}</span></p>
+    <table>
+      <tr><th>Issue</th><th>Date</th><th>Description of revision</th><th>Reviewed by</th></tr>
+      ${issuesRows()}
+    </table>
+    <p><b>Project No:</b> ${esc(v("projectNo"))} &nbsp;&nbsp; <b>Project Ref:</b> ${esc(v("projectRef"))}</p>
+    <p>This live document is to remain on site at all times and be used by the project management team in
+       conjunction with the Project Management System Folder. At project completion please return this
+       complete folder to Mostlane Construction Limited.</p>
+    <p><i>${esc(asbestosLine())}</i></p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageDescription(){
+  return `<div class="page">
+    <h2>1.0&nbsp;&nbsp;Introduction</h2>
+    <p>This document forms the Health &amp; Safety Plan for the project as required under the Construction
+       (Design &amp; Management) Regulations 2015. It is a live document to be reviewed and amended throughout
+       the life of the project. An initial review is to be undertaken by the Project Manager who will complete
+       those appendices that require to be made site specific.</p>
+    <p>The project will be carried out in accordance with the Construction (Design &amp; Management) Regulations
+       2015, Approved Codes of Practice, Guidance Notes and all other relevant Regulations under the Health &amp;
+       Safety at Work Act 1974.</p>
+
+    <h2>2.0&nbsp;&nbsp;Description of the Project</h2>
+    <h3>2.1&nbsp;&nbsp;Project Description &amp; Programme Details</h3>
+    <table>
+      <tr><th style="width:38%">Description of the project</th><td>${esc(v("scheme"))}</td></tr>
+      <tr><th>Location</th><td>${nl(v("siteAddress"))}</td></tr>
+      <tr><th>Project duration</th><td>${esc(v("duration"))}</td></tr>
+      <tr><th>Working hours</th><td>${esc(v("workingHours"))}</td></tr>
+    </table>
+
+    <h3>2.2&nbsp;&nbsp;Project Contacts</h3>
+    <table>
+      <tr><th>Project Director</th><td>${esc(v("projectDirector"))} &mdash; Office ${esc(v("officeTel"))}, Mob ${esc(v("projectDirectorMob"))}</td></tr>
+      <tr><th>Contracts Manager(s)</th><td>${esc(v("contractsManager"))} &mdash; ${esc(v("contractsManagerTel"))}</td></tr>
+      <tr><th>Site Manager</th><td>${esc(v("siteManager"))} &mdash; ${esc(v("siteManagerTel"))}</td></tr>
+    </table>
+    <p>A full project directory with all team members is appended at Appendix A.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageWelfare(){
+  return `<div class="page">
+    <h2>3.0&nbsp;&nbsp;Management of the Project</h2>
+    <h3>Welfare Facilities &amp; First Aid</h3>
+    <p>${nl(v("welfare"))}</p>
+    <p>The site supervisor is first aid trained and will be on site at all times when any person is working on the
+       premises. The first aid kit will be located within the site facilities or with the Mostlane operatives and
+       will be a fully stocked first aid kit suitable for the number of persons working on site.</p>
+    <h3>Site Induction, Training &amp; Security</h3>
+    <p>All personnel wishing to visit site will report to the site office where they will undergo a site-specific
+       induction carried out by Mostlane Construction Ltd. When there are no persons working on the site the site
+       will be secured to prevent any unauthorised access. Toolbox talks will be undertaken on a regular basis.</p>
+    <h3>Accident / Incident / Near Miss</h3>
+    <p>Accidents and incidents requiring notification to the Health &amp; Safety Executive will be reported as
+       required under the RIDDOR Regulations 2013 within the allocated time constraints and on the relevant
+       documentation contained within the PMS Folder.</p>
+    <h3>Fire &amp; Emergency Procedures</h3>
+    <p>The fire assembly point will be pointed out as per the existing Fire Safety evacuation plan. An emergency
+       contact list for relevant local services will be compiled and displayed in the site office together with a
+       map showing the route from site to the nearest accident and emergency department
+       (see Appendix E &mdash; ${esc(v("hospitalName"))}).</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageSafetyRisks(){
+  return `<div class="page">
+    <h2>4.0&nbsp;&nbsp;Arrangements for Controlling Significant Project Risks</h2>
+    <h3>4.1&nbsp;&nbsp;Safety Risks</h3>
+    <h4>Access &amp; Egress (including deliveries)</h4>
+    <p>${nl(v("accessEgress"))}</p>
+    <h4>Working On or Near Live Services</h4>
+    <p>Electrical work will only be done by a competent person. Isolation points of all live services within the
+       building will be identified prior to works commencing. All necessary services that will be worked on will
+       be isolated and tagged before the commencement of works.</p>
+    <h4>Stability of Existing Structure</h4>
+    <p>${nl(v("stability"))}</p>
+    <h4>Fall Prevention</h4>
+    <p>${nl(v("fallPrevention"))}</p>
+    <p>A Scafftag&copy; system must be implemented and prominently displayed at the access to all mobile
+       towers / scaffolds. &lsquo;Hop Ups&rsquo; are not permitted on Mostlane Construction Ltd sites.</p>
+    <h4>Control of Lifting Operations</h4>
+    <p>${nl(v("lifting"))}</p>
+    <h4>Traffic Routes &amp; Segregation</h4>
+    <p>${nl(v("traffic"))}</p>
+    <h4>Storage of Materials &amp; Equipment</h4>
+    <p>${nl(v("storage"))}</p>
+    <h3>4.2&nbsp;&nbsp;Health Risks</h3>
+    <p><b>Manual Handling, Hazardous Substances (COSHH) &amp; Noise/Vibration</b> are managed by assessment and
+       control measures recorded in the PMS Folder, with hazardous substance data sheets and COSHH assessments
+       submitted before use.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageAppendixA(){
+  return `<div class="page">
+    <p class="appendix-tab">A</p>
+    <h2>Appendix A &mdash; Project Directory</h2>
+    <p><b>Project No:</b> ${esc(v("projectNo"))} &nbsp;&nbsp; <b>Project Name:</b> ${esc(v("projectName"))}</p>
+    <table>
+      <tr><th>Service</th><th>Representative</th><th>Company</th><th>Address</th><th>Telephone</th><th>Mobile</th><th>Email</th></tr>
+      ${directoryRows()}
+    </table>
+    ${FOOT}
+  </div>`;
+}
+
+function pageAppendixB(){
+  return `<div class="page">
+    <p class="appendix-tab">B</p>
+    <h2>Appendix B &mdash; Risk Assessment &amp; Method Statement</h2>
+    <p><b>${esc(v("ramsTitle"))}</b> &nbsp; <span class="danger-tag">${esc(v("ramsDanger"))}</span></p>
+    <p><b>Reference:</b> ${esc(v("projectRef"))}</p>
+    <table>
+      <tr><th style="width:34%">Location of activity</th><td>${esc(v("ramsLocation"))}</td></tr>
+      <tr><th>Description of activity</th><td>${esc(v("ramsDesc"))}</td></tr>
+      <tr><th>Equipment used</th><td>${nl(v("ramsEquipment"))}</td></tr>
+      <tr><th>Supporting documents</th><td>${esc(v("ramsSupporting"))}</td></tr>
+      <tr><th>Person(s) affected</th><td>${esc(v("ramsPersons"))}</td></tr>
+      <tr><th>Total numbers affected</th><td>${esc(v("ramsNumbers"))}</td></tr>
+      <tr><th>Frequency of exposure</th><td>${esc(v("ramsFrequency"))}</td></tr>
+      <tr><th>Duration of exposure</th><td>${esc(v("ramsExposure"))}</td></tr>
+      <tr><th>Assessor</th><td>${esc(v("ramsAssessor"))}</td></tr>
+      <tr><th>Created on</th><td>${esc(v("ramsCreated"))}</td></tr>
+      <tr><th>Review before</th><td>${esc(v("ramsReview"))}</td></tr>
+    </table>
+    <p style="font-size:11px;color:#555">The full hazard schedule, control measures and selected PPE are held in
+       the THSP Risk Assessment Builder document attached to this plan.</p>
+    ${FOOT}
+  </div>`;
+}
+
+function pageAppendixCDE(){
+  return `<div class="page">
+    <p class="appendix-tab">C</p>
+    <h2>Appendix C &mdash; Site Compound Location &amp; Set-up</h2>
+    <p>${nl(v("compoundText"))}</p>
+
+    <p class="appendix-tab">D</p>
+    <h2>Appendix D &mdash; Contact Details</h2>
+    <table>
+      <tr><th>Service</th><th>Name(s)</th><th>Company</th><th>Telephone / Mobile</th></tr>
+      ${(state.directory||[]).map(r=>`<tr>
+        <td>${esc(r.service)}</td><td>${esc(r.name)}</td><td>${esc(r.company)}</td>
+        <td>${esc(r.phone)}${r.phone&&r.mobile?" / ":""}${esc(r.mobile)}</td></tr>`).join("")}
+    </table>
+
+    <p class="appendix-tab">E</p>
+    <h2>Appendix E &mdash; Local Hospital &amp; A&amp;E Department</h2>
+    <p><b>${esc(v("hospitalName"))}</b><br>${nl(v("hospitalAddress"))}</p>
+
+    <h2>Appendix F &mdash; Mostlane Health &amp; Safety Policy</h2>
+    <p>(Sent as a separate email attachment as a protected file.)</p>
+    ${FOOT}
+  </div>`;
+}
+
+/* ============================================================
+   6. TOOLBAR ACTIONS
+   ============================================================ */
+document.getElementById("btnPrint").addEventListener("click",()=>window.print());
+
+document.getElementById("btnNew").addEventListener("click",()=>{
+  if(confirm("Start a new job? This clears all answers in this browser.")){
+    state=blankState(); persist(); buildForm(); renderDoc();
+  }
+});
+document.getElementById("btnExample").addEventListener("click",()=>{
+  if(confirm("Load the Lake Road Surgery example over your current answers?")){
+    state=exampleState(); persist(); buildForm(); renderDoc();
+  }
+});
+document.getElementById("btnSave").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=(v("projectName")||"hs-plan").replace(/[^a-z0-9]+/gi,"-").toLowerCase()+"-answers.json";
+  a.click();
+});
+const fileInput=document.getElementById("fileInput");
+document.getElementById("btnLoad").addEventListener("click",()=>fileInput.click());
+fileInput.addEventListener("change",e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ state=JSON.parse(r.result); persist(); buildForm(); renderDoc(); }
+                 catch(err){ alert("Could not read that file."); } };
+  r.readAsText(file); fileInput.value="";
+});
+
+/* ============================================================
+   7. INIT
+   ============================================================ */
+load();
+buildForm();
+renderDoc();
+</script>
+</body>
+</html>
