@@ -32,6 +32,8 @@
   <div class="row"><h2>2. Geocoding API <span id="r-geo">…</span></h2><div class="muted" id="d-geo"></div></div>
   <div class="row"><h2>3. Routes API (road route + drive time) <span id="r-dir">…</span></h2><div class="muted" id="d-dir"></div></div>
   <div class="row"><h2>4. Distance Matrix API (drive distance + time) <span id="r-dm">…</span></h2><div class="muted" id="d-dm"></div></div>
+  <div class="row"><h2>5. Places API (A&amp;E search) <span id="r-places">…</span></h2><div class="muted" id="d-places"></div></div>
+  <div class="row"><h2>6. Maps Static API (inserted map images) <span id="r-static">…</span></h2><div class="muted" id="d-static"></div></div>
 
 <script>
 /* Same key the tool uses. */
@@ -61,7 +63,7 @@ function geocode(addr){
 async function runTests(){
   const origin = document.getElementById("origin").value;
   const dest   = document.getElementById("dest").value;
-  ["geo","dir","dm"].forEach(id=>{document.getElementById("r-"+id).textContent="…";document.getElementById("r-"+id).className="";});
+  ["geo","dir","dm","places","static"].forEach(id=>{document.getElementById("r-"+id).textContent="…";document.getElementById("r-"+id).className="";});
 
   // 2. Geocoding
   const g1 = await geocode(origin);
@@ -102,6 +104,23 @@ async function runTests(){
         mark("dm", false, "Service status: <code>"+st+"</code>"+(el?(", element status: <code>"+el.status+"</code>"):"")+". If REQUEST_DENIED, enable the <b>Distance Matrix API</b>.");
       }
     });
+
+  // 5. Places API (the app uses this for the A&E search + autocomplete)
+  try{
+    const svc=new google.maps.places.PlacesService(document.createElement("div"));
+    svc.textSearch({query:"A&E accident and emergency hospital", location:g1.loc, radius:30000},(res,st)=>{
+      const PS=google.maps.places.PlacesServiceStatus;
+      if(st===PS.OK||st===PS.ZERO_RESULTS) mark("places", true, (res&&res.length)?(res.length+" results found."):"Reachable (0 results).");
+      else mark("places", false, "Status: <code>"+st+"</code>. Enable the <b>Places API</b> on the project / key.");
+    });
+  }catch(e){ mark("places", false, "Places library not available: "+e.message); }
+
+  // 6. Maps Static API (the app embeds inserted compound / route images via this)
+  const surl="https://maps.googleapis.com/maps/api/staticmap?center="+g1.loc.lat()+","+g1.loc.lng()+"&zoom=14&size=320x140&key="+KEY;
+  const img=new Image();
+  img.onload=()=>mark("static", true, 'Image loaded ('+img.naturalWidth+'×'+img.naturalHeight+'):<br><img src="'+surl+'" style="max-width:100%;border:1px solid #ccd6e0;border-radius:4px;margin-top:6px">');
+  img.onerror=()=>mark("static", false, "Image failed to load. Enable the <b>Maps Static API</b> and check the key's referrer restrictions.");
+  img.src=surl;
 }
 
 window.gm_authFailure = function(){
@@ -109,7 +128,7 @@ window.gm_authFailure = function(){
 };
 </script>
 <script async
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANo2Q7OehYzHTTgMTxRr5ISamf5IradcM&libraries=geometry&callback=__ready"
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANo2Q7OehYzHTTgMTxRr5ISamf5IradcM&libraries=places,geometry&callback=__ready"
   onerror="document.getElementById('d-js').innerHTML='Failed to load the Maps script.';document.getElementById('r-js').textContent='✗ FAILED';document.getElementById('r-js').className='bad';"></script>
 </body>
 </html>

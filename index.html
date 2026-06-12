@@ -262,7 +262,7 @@
     <div class="lib-head">
       <div>
         <h1>Construction Phase H&amp;S Plans</h1>
-        <p class="lib-sub">Mostlane Construction Ltd &mdash; job library <span style="opacity:.6">&middot; build 2026-06-11h</span></p>
+        <p class="lib-sub">Mostlane Construction Ltd &mdash; job library <span style="opacity:.6">&middot; build 2026-06-11i</span></p>
       </div>
       <div class="lib-actions">
         <button id="libNew">+ New job</button>
@@ -280,7 +280,7 @@
   <!-- ============ FORM PANE ============ -->
   <div class="form-pane">
     <h1 class="app-title">Construction Phase H&amp;S Plan</h1>
-    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11h</span></p>
+    <p class="app-sub">Mostlane Construction Ltd &mdash; job set-up questionnaire <span style="opacity:.6">&middot; build 2026-06-11i</span></p>
 
     <div class="toolbar">
       <button id="btnLibrary" class="secondary">&larr; Library</button>
@@ -490,10 +490,17 @@ function emptyContact(){return {service:"",name:"",company:"",address:"",phone:"
 function load(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
-    if(raw){ state=JSON.parse(raw); ensureAux(); return; }
+    if(raw){ state=JSON.parse(raw); mergeDefaults(); ensureAux(); return; }
   }catch(e){}
   state=exampleState();           // first visit shows the worked example
   ensureAux();
+}
+/* For returning users whose saved record predates newer fields (e.g. the
+   method-statement ms* fields): add any field that's missing, with its
+   default, without overwriting values they've already entered. */
+function mergeDefaults(){
+  const d=exampleState();
+  for(const k in d){ if(!(k in state)) state[k]=d[k]; }
 }
 function persist(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }catch(e){} }
 
@@ -558,8 +565,13 @@ function buildField(f){
     }
     persist(); renderDoc();
   });
-  if(f.id==="_mapsKey"){   // once a key is entered/removed, rebuild so map widgets activate
-    wrap.querySelector("[data-id]").addEventListener("change",()=>buildForm());
+  if(f.id==="_mapsKey"){   // once a key is entered/removed, refresh the map widgets
+    wrap.querySelector("[data-id]").addEventListener("change",()=>{
+      persist();
+      // If Maps JS already loaded under the previous key, reload so the
+      // interactive APIs use the new override too (not just the static URLs).
+      if(_mapsReady) location.reload(); else buildForm();
+    });
   }
   return wrap;
 }
@@ -910,6 +922,9 @@ function openHospitalModal(){
         state.hospitalName=name||"";
         state.hospitalAddress=(addr||"").replace(/,\s*/g,"\n");
         state.hospitalLatLng={lat:loc.lat(),lng:loc.lng()};
+        // Invalidate any previous route immediately so the Insert guard can't
+        // save the new hospital marker with the old route while this is pending.
+        state.hospitalPolyline=""; state.hospitalStraight=null; state.hospitalRouteText="";
         const dest={lat:loc.lat(),lng:loc.lng()};
         info.textContent="Calculating route…"; persist();
         // 1) Routes API — full road route + drive distance + time
@@ -1921,7 +1936,7 @@ document.getElementById("btnLoad").addEventListener("click",()=>fileInput.click(
 fileInput.addEventListener("change",e=>{
   const file=e.target.files[0]; if(!file) return;
   const r=new FileReader();
-  r.onload=()=>{ try{ state=JSON.parse(r.result); ensureAux(); persist(); buildForm(); renderDoc(); }
+  r.onload=()=>{ try{ state=JSON.parse(r.result); mergeDefaults(); ensureAux(); persist(); buildForm(); renderDoc(); }
                  catch(err){ alert("Could not read that file."); } };
   r.readAsText(file); fileInput.value="";
 });
